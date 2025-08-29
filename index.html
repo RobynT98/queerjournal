@@ -5,164 +5,153 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Queer Journal</title>
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap">
   <style>
-    body { font-family: sans-serif; margin: 1rem; }
-    .pill { padding: .5rem 1rem; margin: .2rem; border-radius: 15px; border: 1px solid #333; }
-    .danger { background: red; color: white; }
-    .row { display: flex; gap: .5rem; flex-wrap: wrap; }
+    body {
+      margin: 0;
+      font-family: 'Quicksand', sans-serif;
+      background: #fafafa;
+      color: #222;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark {
+      background: #121212;
+      color: #eee;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.8rem 1rem;
+      background: linear-gradient(90deg, #d53369, #daae51);
+      color: white;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    .toggle-dark {
+      cursor: pointer;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 50%;
+      width: 35px;
+      height: 35px;
+      color: white;
+      font-size: 1rem;
+    }
+
+    main {
+      padding: 1rem;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    body.dark .card {
+      background: #1f1f1f;
+    }
+    .card:hover {
+      transform: scale(1.01);
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-around;
+      background: #eee;
+      padding: 0.6rem 0;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+    }
+    body.dark footer {
+      background: #1e1e1e;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 0.5rem;
+      border: none;
+      background: transparent;
+      font-size: 0.9rem;
+      cursor: pointer;
+      color: inherit;
+    }
+    .tab.active {
+      font-weight: 600;
+      border-bottom: 2px solid #d53369;
+    }
+
+    button, input, textarea, select {
+      font-family: inherit;
+    }
+
+    .pill {
+      border-radius: 20px;
+      padding: 0.4rem 0.9rem;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(90deg, #6a11cb, #2575fc);
+      color: white;
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>🌈 Queer Journal</h1>
-    <p>Schema • Memo • Dagbok – offline & privat</p>
+    <button class="toggle-dark" id="darkToggle">🌓</button>
   </header>
 
   <main>
-    <section>
+    <!-- Ny anteckning -->
+    <section class="card">
       <h2>Ny anteckning</h2>
-      <label>Datum <input id="date" type="date"></label>
-      <label>Tid <input id="time" type="time"></label>
-      <label><input id="setAlarm" type="checkbox"> ⏰ Ställ alarm</label>
-      <br>
-      <label>Känsla <select id="feeling">
-        <option value="">–</option>
+      <label>Datum <input type="date" id="dateInput"></label><br>
+      <label>Tid <input type="time" id="timeInput"></label><br>
+      <label><input type="checkbox" id="alarmCheck"> ⏰ Ställ alarm</label><br>
+      <label>Känsla <select id="moodInput">
+        <option value="">--</option>
         <option>Glad</option>
         <option>Ledsen</option>
         <option>Stolt</option>
-      </select></label>
-      <label>Taggar <input id="tags" type="text"></label>
-      <br>
-      <textarea id="content" placeholder="t.ex. 1/2 påse blötmat" rows="4" cols="30"></textarea>
-      <br>
-      <label>Bild (valfritt) <input id="image" type="file" accept="image/*"></label>
-      <br>
-      <button id="saveBtn" class="pill">Spara</button>
-      <button id="clearBtn" class="pill">Rensa</button>
+      </select></label><br>
+      <label>Taggar <input type="text" id="tagsInput"></label><br>
+      <textarea id="contentInput" placeholder="t.ex. 1/2 påse blötmat"></textarea><br>
+      <input type="file" id="imageInput"><br><br>
+      <button class="pill" id="saveBtn">Spara</button>
+      <button class="pill" style="background:#ccc;color:#222;">Rensa</button>
     </section>
 
-    <section>
-      <h2>Filter</h2>
-      <input id="searchText" type="text" placeholder="sök text">
-      <input id="tagFilter" type="text" placeholder="filtrera på tagg">
-      <br>
-      <button id="exportBtn" class="pill">Exportera</button>
-      <button id="importBtn" class="pill">Importera</button>
-      <input id="fileInput" type="file" accept=".json" style="display:none">
-    </section>
-
-    <section>
+    <!-- Lista anteckningar -->
+    <section class="card">
       <h2>Mina anteckningar</h2>
-      <div id="entries"></div>
+      <div id="notesList">Inga anteckningar.</div>
     </section>
   </main>
 
   <footer>
-    <div class="row">
-      <button id="listViewBtn" class="pill">Lista</button>
-      <button id="dayViewBtn" class="pill">Dag</button>
-      <button id="weekViewBtn" class="pill">Vecka</button>
-      <button id="alarmViewBtn" class="pill">Alarm</button>
-    </div>
+    <button class="tab active" id="listViewBtn">Lista</button>
+    <button class="tab" id="dayViewBtn">Dag</button>
+    <button class="tab" id="weekViewBtn">Vecka</button>
+    <button class="tab" id="alarmViewBtn">Alarm</button>
   </footer>
 
-  <!-- Alarm-ljud -->
   <audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
-<script>
-let state = { entries: [] };
-let viewMode = "list";
-
-// Be om tillstånd för notiser
-if ("Notification" in window && Notification.permission !== "granted") {
-  Notification.requestPermission();
-}
-
-function save() {
-  localStorage.setItem("entries", JSON.stringify(state.entries));
-}
-
-function load() {
-  const saved = localStorage.getItem("entries");
-  if (saved) state.entries = JSON.parse(saved);
-}
-
-function render() {
-  const container = document.getElementById("entries");
-  container.innerHTML = "";
-  if (state.entries.length === 0) {
-    container.textContent = "Inga anteckningar.";
-    return;
-  }
-  state.entries.forEach((note, idx) => {
-    const div = document.createElement("div");
-    div.style.border = "1px solid #ccc";
-    div.style.margin = ".5rem 0";
-    div.style.padding = ".5rem";
-    div.innerHTML = `
-      <strong>${note.feeling || "🌈"} – ${note.tags || ""}</strong>
-      <br>${note.date} ${note.time} ${note.alarm ? "⏰" : ""}
-      <p>${note.content}</p>
-      <button onclick="deleteEntry(${idx})" class="pill danger">Radera</button>
-    `;
-    container.appendChild(div);
-  });
-}
-
-function deleteEntry(idx) {
-  state.entries.splice(idx, 1);
-  save();
-  render();
-}
-
-function triggerAlarm(note) {
-  // 1. spela ljud
-  const sound = document.getElementById("alarmSound");
-  if (sound) {
-    sound.play().catch(err => console.log("Kan inte spela ljud:", err));
-  }
-  // 2. systemnotis
-  if ("Notification" in window && Notification.permission === "granted") {
-    new Notification("⏰ Alarm!", {
-      body: note.content || "Dags att kolla din anteckning!",
-      icon: "icons/icon-192.png"
-    });
-  } else {
-    alert("⏰ " + (note.content || "Alarm!"));
-  }
-}
-
-document.getElementById("saveBtn").onclick = () => {
-  const note = {
-    date: document.getElementById("date").value,
-    time: document.getElementById("time").value,
-    alarm: document.getElementById("setAlarm").checked,
-    feeling: document.getElementById("feeling").value,
-    tags: document.getElementById("tags").value,
-    content: document.getElementById("content").value
-  };
-  state.entries.push(note);
-  save();
-  render();
-
-  // Om alarm är satt
-  if (note.alarm && note.date && note.time) {
-    const now = new Date().getTime();
-    const alarmTime = new Date(note.date + "T" + note.time).getTime();
-    const delay = alarmTime - now;
-    if (delay > 0) {
-      setTimeout(() => triggerAlarm(note), delay);
-    }
-  }
-};
-
-document.getElementById("clearBtn").onclick = () => {
-  document.getElementById("content").value = "";
-  document.getElementById("tags").value = "";
-};
-
-load();
-render();
-</script>
+  <script>
+    // Dark mode toggle
+    document.getElementById("darkToggle").onclick = () => {
+      document.body.classList.toggle("dark");
+    };
+  </script>
 </body>
-                                                                              </html>
+</html>
