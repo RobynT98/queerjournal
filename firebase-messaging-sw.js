@@ -1,6 +1,6 @@
-// firebase-messaging-sw.js
-importScripts("https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js");
-importScripts("https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging.js");
+// firebase-messaging-sw.js (måste ligga i roten)
+importScripts("https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging-compat.js");
 
 firebase.initializeApp({
   apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
@@ -12,16 +12,14 @@ firebase.initializeApp({
   measurementId: "G-0T6JCFJCFZ"
 });
 
-// Hämta messaging
 const messaging = firebase.messaging();
 
-// Hantera push i bakgrunden
+// Visas när push kommer i bakgrunden
 messaging.onBackgroundMessage((payload) => {
-  console.log("[firebase-messaging-sw.js] Fick bakgrundsmeddelande:", payload);
-  const notificationTitle = payload.notification?.title || "Queer Journal";
-  const notificationOptions = {
-    body: payload.notification?.body || "Ny notis",
-    icon: "android-chrome-192x192.png"
-  };
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  const title = payload?.notification?.title || "Queer Journal";
+  const body  = payload?.notification?.body  || "Ny notis";
+  self.registration.showNotification(title, {
+    body,
+    icon: "android-chrome-192x192.png" // funkar även offline
+  });
 });
