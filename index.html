@@ -61,6 +61,14 @@
   </style>
 </head>
 <body>
+  <script>
+  // Döda ev. gammalt PIN-lås från tidigare versioner
+  try {
+    ['qj.pin','qj.salt','qj.attempts'].forEach(k => localStorage.removeItem(k));
+    const pinEl = document.getElementById('pinOverlay');
+    if (pinEl) pinEl.style.display = 'none';
+  } catch {}
+  </script>
   <header>
     <h1>🌈 Queer Journal</h1>
     <div class="user-chip" id="userChip" style="display:none">
