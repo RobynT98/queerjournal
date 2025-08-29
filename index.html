@@ -1,136 +1,145 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Queer Journal</title>
-  <link rel="manifest" href="site.webmanifest">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap">
+
+  <!-- PWA -->
+  <link rel="manifest" href="site.webmanifest" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="icon" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" sizes="16x16" href="favicon-16x16.png" />
+
+  <!-- Font -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" />
+
   <style>
-    body {
-      margin: 0;
-      font-family: 'Quicksand', sans-serif;
-      background: #fafafa;
-      color: #222;
-      transition: background 0.3s, color 0.3s;
+    :root{
+      --brand1:#d53369;--brand2:#daae51;
+      --btn1:#6a11cb;--btn2:#2575fc;
+      --bg:#fafafa;--text:#222;--card:#fff;--muted:#666;--line:#e8e8e8;
+      --bg-dark:#121212;--text-dark:#eee;--card-dark:#1f1f1f;--line-dark:#2a2a2a;
     }
-    body.dark { background: #121212; color: #eee; }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.8rem 1rem;
-      background: linear-gradient(90deg, #d53369, #daae51);
-      color: white;
-    }
-    header h1 { margin: 0; font-size: 1.2rem; }
-    .toggle-dark {
-      cursor: pointer;
-      background: rgba(255,255,255,0.2);
-      border: none;
-      border-radius: 50%;
-      width: 35px; height: 35px;
-      color: white;
-      font-size: 1rem;
-    }
-
-    main { padding: 1rem; display: grid; gap: 1rem; }
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 1rem;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-      transition: transform 0.2s;
-    }
-    body.dark .card { background: #1f1f1f; }
-    .card:hover { transform: scale(1.01); }
-
-    footer {
-      display: flex; justify-content: space-around;
-      background: #eee; padding: 0.6rem 0;
-      position: fixed; bottom: 0; width: 100%;
-    }
-    body.dark footer { background: #1e1e1e; }
-
-    .tab { flex: 1; text-align: center; padding: 0.5rem; border: none; background: transparent; font-size: 0.9rem; cursor: pointer; color: inherit; }
-    .tab.active { font-weight: 600; border-bottom: 2px solid #d53369; }
-
-    button, input, textarea, select { font-family: inherit; }
-    .pill {
-      border-radius: 20px; padding: 0.4rem 0.9rem;
-      border: none; cursor: pointer;
-      background: linear-gradient(90deg, #6a11cb, #2575fc);
-      color: white;
-    }
-    .pill.secondary { background:#ccc; color:#222; }
-
-    .auth-form input { margin: 0.3rem 0; width: 100%; padding: 0.5rem; }
-    .auth-form button { margin-top: 0.5rem; width: 100%; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'Quicksand',sans-serif;background:var(--bg);color:var(--text);transition:.25s}
+    body.dark{background:var(--bg-dark);color:var(--text-dark)}
+    header{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1rem;background:linear-gradient(90deg,var(--brand1),var(--brand2));color:#fff}
+    header h1{margin:0;font-size:1.2rem}
+    .toggle-dark{cursor:pointer;background:rgba(255,255,255,.2);border:0;border-radius:50%;width:36px;height:36px;color:#fff}
+    main{padding:1rem;display:grid;gap:1rem;max-width:920px;margin:0 auto}
+    .card{background:var(--card);border-radius:12px;padding:1rem;box-shadow:0 3px 8px rgba(0,0,0,.08);border:1px solid var(--line)}
+    body.dark .card{background:var(--card-dark);border-color:var(--line-dark)}
+    .row{display:flex;gap:.5rem;flex-wrap:wrap}
+    label{display:inline-flex;align-items:center;gap:.4rem;margin:.25rem 0}
+    input,select,textarea,button{font:inherit}
+    input,select,textarea{width:100%;padding:.55rem .7rem;border-radius:.7rem;border:1px solid var(--line);background:inherit;color:inherit}
+    body.dark input,body.dark select,body.dark textarea{border-color:var(--line-dark)}
+    textarea{min-height:120px}
+    .pill{border-radius:999px;border:0;background:linear-gradient(90deg,var(--btn1),var(--btn2));color:#fff;padding:.5rem 1rem;cursor:pointer}
+    .pill.secondary{background:#ccc;color:#222}
+    .badge{display:inline-block;padding:.15rem .5rem;border-radius:999px;border:1px solid var(--line);font-size:.8rem;margin-right:.25rem}
+    body.dark .badge{border-color:var(--line-dark)}
+    .thumb{max-width:120px;border-radius:.5rem;display:block;margin-top:.5rem}
+    .muted{color:var(--muted)}
+    footer{position:fixed;bottom:0;left:0;right:0;background:#eee;border-top:1px solid var(--line)}
+    body.dark footer{background:#1e1e1e;border-color:var(--line-dark)}
+    .tabs{max-width:920px;margin:0 auto;display:flex;gap:.25rem;padding:.4rem}
+    .tab{flex:1;background:transparent;border:0;padding:.6rem 0;cursor:pointer;color:inherit;border-bottom:2px solid transparent}
+    .tab.active{font-weight:600;border-color:var(--brand1)}
+    .entry{border:1px solid var(--line);padding:.8rem;border-radius:.75rem;margin:.5rem 0}
+    body.dark .entry{border-color:var(--line-dark)}
+    .emoji{font-size:1.15rem;margin-right:.35rem}
+    .empty{padding:.6rem 0}
+    /* small helper on mobile to avoid footer overlap */
+    .spacer{height:72px}
   </style>
 </head>
 <body>
   <header>
     <h1>🌈 Queer Journal</h1>
-    <button class="toggle-dark" id="darkToggle">🌓</button>
+    <button id="darkToggle" class="toggle-dark" title="Byt tema">🌓</button>
   </header>
 
   <main>
-    <!-- Auth -->
-    <section class="card" id="authSection">
+    <!-- AUTH -->
+    <section id="authSection" class="card">
       <h2>Logga in / Skapa konto</h2>
-      <div class="auth-form">
-        <input type="email" id="emailInput" placeholder="E-post">
-        <input type="password" id="passwordInput" placeholder="Lösenord">
-        <button class="pill" id="loginBtn">Logga in</button>
-        <button class="pill secondary" id="registerBtn">Skapa konto</button>
+      <p class="muted">Dina anteckningar sparas privat i molnet och synkas mellan enheter.</p>
+      <input id="emailInput" type="email" placeholder="E-post" />
+      <input id="passwordInput" type="password" placeholder="Lösenord" />
+      <div class="row">
+        <button id="loginBtn" class="pill">Logga in</button>
+        <button id="registerBtn" class="pill secondary">Skapa konto</button>
+        <button id="logoutBtn" class="pill" style="display:none">Logga ut</button>
       </div>
-      <button class="pill" id="logoutBtn" style="display:none;">Logga ut</button>
     </section>
 
-    <!-- Ny anteckning -->
-    <section class="card" id="noteSection" style="display:none;">
+    <!-- NEW NOTE -->
+    <section id="noteSection" class="card" style="display:none">
       <h2>Ny anteckning</h2>
-      <label>Datum <input type="date" id="dateInput"></label><br>
-      <label>Tid <input type="time" id="timeInput"></label><br>
-      <label><input type="checkbox" id="alarmCheck"> ⏰ Ställ alarm</label><br>
-      <label>Känsla 
-        <select id="moodInput">
-          <option value="">--</option>
-          <option>Glad</option>
-          <option>Ledsen</option>
-          <option>Stolt</option>
-        </select>
-      </label><br>
-      <label>Taggar <input type="text" id="tagsInput"></label><br>
-      <textarea id="contentInput" placeholder="t.ex. 1/2 påse blötmat"></textarea><br>
-      <input type="file" id="imageInput"><br><br>
-      <button class="pill" id="saveBtn">Spara</button>
-      <button class="pill secondary" id="clearBtn">Rensa</button>
+      <div class="row">
+        <label style="flex:1">Datum <input id="dateInput" type="date" /></label>
+        <label style="flex:1">Tid <input id="timeInput" type="time" /></label>
+      </div>
+      <label><input id="alarmCheck" type="checkbox" /> ⏰ Ställ alarm</label>
+      <div class="row">
+        <label style="flex:1">Känsla
+          <select id="moodInput">
+            <option value="">--</option>
+            <option>😊 Lugn</option>
+            <option>🔥 Taggad</option>
+            <option>😢 Ledsen</option>
+            <option>🌈 Proud</option>
+          </select>
+        </label>
+        <label style="flex:1">Taggar <input id="tagsInput" type="text" placeholder="komma-separerat: skola, katt" /></label>
+      </div>
+      <label>Innehåll
+        <textarea id="contentInput" placeholder="t.ex. 1/2 påse blötmat"></textarea>
+      </label>
+      <label for="imageInput">Bild (valfritt)</label>
+      <input id="imageInput" type="file" accept="image/*" />
+      <div class="row" style="margin-top:.6rem">
+        <button id="saveBtn" class="pill">Spara</button>
+        <button id="clearBtn" class="pill secondary">Rensa</button>
+      </div>
     </section>
 
-    <!-- Lista anteckningar -->
-    <section class="card" id="notesSection" style="display:none;">
+    <!-- NOTES LIST -->
+    <section id="notesSection" class="card" style="display:none">
       <h2>Mina anteckningar</h2>
-      <div id="notesList">Inga anteckningar.</div>
+      <div id="notesList" class="empty">Inga anteckningar ännu.</div>
     </section>
   </main>
 
+  <div class="spacer"></div>
+
   <footer>
-    <button class="tab active" id="listViewBtn">Lista</button>
-    <button class="tab" id="dayViewBtn">Dag</button>
-    <button class="tab" id="weekViewBtn">Vecka</button>
-    <button class="tab" id="alarmViewBtn">Alarm</button>
+    <div class="tabs">
+      <button id="listViewBtn" class="tab active">Lista</button>
+      <button id="dayViewBtn" class="tab">Dag</button>
+      <button id="weekViewBtn" class="tab">Vecka</button>
+      <button id="alarmViewBtn" class="tab">Alarm</button>
+    </div>
   </footer>
 
+  <!-- Alarm-ljud -->
   <audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
-  <!-- Firebase -->
+  <!-- Firebase SDK (modul-CDN) -->
   <script type="module">
+    // ---- Firebase imports ----
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import {
+      getAuth, onAuthStateChanged,
+      signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
+    // ---- Config (din) ----
     const firebaseConfig = {
       apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
       authDomain: "queerjournal-1cc9d.firebaseapp.com",
@@ -141,92 +150,221 @@
       measurementId: "G-0T6JCFJCFZ"
     };
 
+    // ---- Init ----
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getFirestore(app);
+    const db   = getFirestore(app);
 
-    const emailInput = document.getElementById("emailInput");
-    const passwordInput = document.getElementById("passwordInput");
-    const loginBtn = document.getElementById("loginBtn");
-    const registerBtn = document.getElementById("registerBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
+    // ---- UI refs ----
+    const emailEl = document.getElementById('emailInput');
+    const passEl  = document.getElementById('passwordInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
 
-    const authSection = document.getElementById("authSection");
-    const noteSection = document.getElementById("noteSection");
-    const notesSection = document.getElementById("notesSection");
+    const authSection  = document.getElementById('authSection');
+    const noteSection  = document.getElementById('noteSection');
+    const notesSection = document.getElementById('notesSection');
+    const notesList    = document.getElementById('notesList');
 
-    // Auth state
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        authSection.style.display = "none";
-        noteSection.style.display = "block";
-        notesSection.style.display = "block";
-        logoutBtn.style.display = "block";
-        loadNotes();
-      } else {
-        authSection.style.display = "block";
-        noteSection.style.display = "none";
-        notesSection.style.display = "none";
-        logoutBtn.style.display = "none";
+    const dateInput=document.getElementById('dateInput');
+    const timeInput=document.getElementById('timeInput');
+    const moodInput=document.getElementById('moodInput');
+    const tagsInput=document.getElementById('tagsInput');
+    const contentInput=document.getElementById('contentInput');
+    const imageInput=document.getElementById('imageInput');
+    const alarmCheck=document.getElementById('alarmCheck');
+
+    const saveBtn=document.getElementById('saveBtn');
+    const clearBtn=document.getElementById('clearBtn');
+
+    // ---- Helpers ----
+    const today=()=> new Date().toISOString().slice(0,10);
+    const now=()=> new Date().toTimeString().slice(0,5);
+    dateInput.value=today(); timeInput.value=now();
+
+    // Notiser: be om tillstånd
+    if ("Notification" in window && Notification.permission!=="granted"){
+      Notification.requestPermission();
+    }
+
+    // Lokal cache för offline visning
+    const CACHE_KEY="qj.cached.notes.v1";
+    function cacheSet(arr){localStorage.setItem(CACHE_KEY,JSON.stringify(arr));}
+    function cacheGet(){try{return JSON.parse(localStorage.getItem(CACHE_KEY)||"[]");}catch{return [];}}
+
+    // ---- Auth actions ----
+    registerBtn.onclick = async () => {
+      try{
+        await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
+        alert("Konto skapat!");
+      }catch(e){alert(e.message);}
+    };
+    loginBtn.onclick = async () => {
+      try{
+        await signInWithEmailAndPassword(auth, emailEl.value, passEl.value);
+      }catch(e){alert(e.message);}
+    };
+    logoutBtn.onclick = () => signOut(auth);
+
+    // Visa/Hide beroende på auth
+    onAuthStateChanged(auth, async (user)=>{
+      if(user){
+        authSection.style.display='none';
+        noteSection.style.display='block';
+        notesSection.style.display='block';
+        logoutBtn.style.display='';
+        await loadNotes(user.uid);                   // hämta från Firestore
+        rescheduleAll();                             // schemalägg alarm
+      }else{
+        authSection.style.display='block';
+        noteSection.style.display='none';
+        notesSection.style.display='none';
+        logoutBtn.style.display='none';
       }
     });
 
-    registerBtn.onclick = async () => {
-      try {
-        await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-        alert("Konto skapat!");
-      } catch (e) { alert(e.message); }
-    };
-    loginBtn.onclick = async () => {
-      try {
-        await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-        alert("Inloggad!");
-      } catch (e) { alert(e.message); }
-    };
-    logoutBtn.onclick = async () => { await signOut(auth); };
-
-    // Notes
-    const saveBtn = document.getElementById("saveBtn");
-    const notesList = document.getElementById("notesList");
-
+    // ---- Save note ----
     saveBtn.onclick = async () => {
-      const content = document.getElementById("contentInput").value;
-      if (!content) return alert("Skriv något!");
-      try {
-        await addDoc(collection(db, "notes"), {
-          text: content,
-          date: new Date()
-        });
+      const user = auth.currentUser;
+      if(!user){alert("Logga in först.");return;}
+      const file=imageInput.files[0];
+      const readImage=(f)=>new Promise(res=>{
+        if(!f)return res(null);
+        const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(f);
+      });
+      const imgData = await readImage(file);
+      const tags = (tagsInput.value||"").split(',').map(s=>s.trim()).filter(Boolean);
+
+      const note = {
+        uid:user.uid,
+        date:dateInput.value,
+        time:timeInput.value,
+        mood:moodInput.value,
+        tags,
+        content:contentInput.value.trim(),
+        image:imgData || null,
+        alarm:Boolean(alarmCheck.checked),
+        createdAt: serverTimestamp()
+      };
+
+      try{
+        await addDoc(collection(db,"notes"), note);
         alert("Sparad!");
-        loadNotes();
-      } catch (e) { alert(e.message); }
+        clearForm();
+        await loadNotes(user.uid);
+        if(note.alarm) scheduleAlarm(note);
+      }catch(e){alert(e.message);}
     };
 
-    async function loadNotes() {
-      notesList.innerHTML = "";
-      const querySnapshot = await getDocs(collection(db, "notes"));
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const div = document.createElement("div");
-        div.textContent = data.text + " (" + (data.date?.toDate?.() || new Date()).toLocaleString() + ")";
-        notesList.appendChild(div);
-      });
-      if (!notesList.innerHTML) notesList.innerHTML = "Inga anteckningar.";
+    function clearForm(){
+      moodInput.value=""; tagsInput.value=""; contentInput.value="";
+      imageInput.value=""; alarmCheck.checked=false;
+      dateInput.value=today(); timeInput.value=now();
     }
 
-    // Dark mode toggle
-    document.getElementById("darkToggle").onclick = () => {
-      document.body.classList.toggle("dark");
-    };
+    // ---- Load notes (per user) ----
+    let currentNotes = [];
+    async function loadNotes(uid){
+      notesList.innerHTML="Laddar…";
+      try{
+        const q=query(collection(db,"notes"), where("uid","==",uid), orderBy("date","desc"));
+        const snap=await getDocs(q);
+        const arr=[];
+        snap.forEach(doc=>{
+          const d=doc.data();
+          arr.push(d);
+        });
+        currentNotes = arr.sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
+        cacheSet(currentNotes);
+        render();
+      }catch(e){
+        // offline? visa cache
+        currentNotes = cacheGet();
+        render();
+      }
+    }
+
+    // ---- Views ----
+    let viewMode="list";
+    document.getElementById('listViewBtn').onclick=()=>{setActive('listViewBtn');viewMode='list';render();};
+    document.getElementById('dayViewBtn').onclick =()=>{setActive('dayViewBtn');viewMode='day';render();};
+    document.getElementById('weekViewBtn').onclick=()=>{setActive('weekViewBtn');viewMode='week';render();};
+    document.getElementById('alarmViewBtn').onclick=()=>{setActive('alarmViewBtn');viewMode='alarm';render();};
+    function setActive(id){
+      document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function render(){
+      if(!currentNotes.length){notesList.innerHTML='<div class="empty">Inga anteckningar.</div>';return;}
+      let list=[...currentNotes];
+
+      if(viewMode==='day'){
+        const iso=today();
+        list=list.filter(n=>n.date===iso);
+      }else if(viewMode==='week'){
+        const d=new Date(); const day=(d.getDay()||7);
+        const mon=new Date(d); mon.setDate(d.getDate()-day+1);
+        const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+        const a=mon.toISOString().slice(0,10), b=sun.toISOString().slice(0,10);
+        list=list.filter(n=>n.date>=a && n.date<=b);
+      }else if(viewMode==='alarm'){
+        list=list.filter(n=>n.alarm);
+      }
+
+      notesList.innerHTML='';
+      list.forEach(n=>{
+        const div=document.createElement('div'); div.className='entry';
+        const title=(n.mood?`<span class="emoji">${n.mood.split(' ')[0]}</span>`:'') + (n.content?.split('\n')[0]?.slice(0,40)||'Anteckning');
+        div.innerHTML=`
+          <strong>${title}</strong><br>
+          <span class="muted">${n.date} ${n.time||''} ${n.alarm?'⏰':''}</span>
+          <p>${(n.content||'').replace(/\n/g,'<br>')}</p>
+          ${(n.tags||[]).map(t=>`<span class="badge">#${t}</span>`).join(' ')}
+          ${n.image?`<img class="thumb" src="${n.image}" alt="bild">`:''}
+        `;
+        notesList.appendChild(div);
+      });
+    }
+
+    // ---- Alarm ----
+    function scheduleAlarm(note){
+      if(!note.date||!note.time) return;
+      const dt=new Date(note.date+"T"+note.time);
+      const diff=dt.getTime()-Date.now();
+      if(diff<=0) return; // för sent
+
+      setTimeout(()=>triggerAlarm(note), diff);
+    }
+    function triggerAlarm(note){
+      const audio=document.getElementById('alarmSound');
+      audio?.play().catch(()=>{});
+      const body=note.content||'Dags att kolla din anteckning!';
+      if("Notification" in window && Notification.permission==="granted"){
+        new Notification("⏰ Alarm!", { body, icon:"android-chrome-192x192.png" });
+      }else{
+        alert("⏰ "+body);
+      }
+    }
+    function rescheduleAll(){
+      currentNotes.filter(n=>n.alarm).forEach(scheduleAlarm);
+    }
+
+    // ---- Theme toggle ----
+    document.getElementById('darkToggle').onclick=()=> document.body.classList.toggle('dark');
+
   </script>
+
+  <!-- Service worker registrering -->
   <script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("sw.js")
-        .then(reg => console.log("Service Worker registrerad:", reg.scope))
-        .catch(err => console.log("SW error:", err));
-    });
-  }
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js")
+          .then(reg => console.log("Service Worker:", reg.scope))
+          .catch(err => console.warn("SW error:", err));
+      });
+    }
   </script>
 </body>
-      </html>
+</html>
