@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Queer Journal</title>
 
-  <!-- PWA -->
+  <!-- PWA / Ikoner -->
   <link rel="manifest" href="site.webmanifest" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="icon" sizes="32x32" href="favicon-32x32.png" />
@@ -27,6 +27,10 @@
     header{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1rem;background:linear-gradient(90deg,var(--brand1),var(--brand2));color:#fff}
     header h1{margin:0;font-size:1.2rem}
     .toggle-dark{cursor:pointer;background:rgba(255,255,255,.2);border:0;border-radius:50%;width:36px;height:36px;color:#fff}
+    .user-chip{display:flex;align-items:center;gap:.5rem}
+    .user-chip img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.6)}
+    .user-chip small{opacity:.9}
+
     main{padding:1rem;display:grid;gap:1rem;max-width:920px;margin:0 auto}
     .card{background:var(--card);border-radius:12px;padding:1rem;box-shadow:0 3px 8px rgba(0,0,0,.08);border:1px solid var(--line)}
     body.dark .card{background:var(--card-dark);border-color:var(--line-dark)}
@@ -38,6 +42,8 @@
     textarea{min-height:120px}
     .pill{border-radius:999px;border:0;background:linear-gradient(90deg,var(--btn1),var(--btn2));color:#fff;padding:.5rem 1rem;cursor:pointer}
     .pill.secondary{background:#ccc;color:#222}
+    .gbtn{background:#fff;color:#222;border:1px solid var(--line);display:inline-flex;align-items:center;gap:.5rem}
+    .gbtn img{width:18px;height:18px}
     .badge{display:inline-block;padding:.15rem .5rem;border-radius:999px;border:1px solid var(--line);font-size:.8rem;margin-right:.25rem}
     body.dark .badge{border-color:var(--line-dark)}
     .thumb{max-width:120px;border-radius:.5rem;display:block;margin-top:.5rem}
@@ -51,13 +57,16 @@
     body.dark .entry{border-color:var(--line-dark)}
     .emoji{font-size:1.15rem;margin-right:.35rem}
     .empty{padding:.6rem 0}
-    /* small helper on mobile to avoid footer overlap */
     .spacer{height:72px}
   </style>
 </head>
 <body>
   <header>
     <h1>🌈 Queer Journal</h1>
+    <div class="user-chip" id="userChip" style="display:none">
+      <img id="userPhoto" alt="">
+      <small id="userName"></small>
+    </div>
     <button id="darkToggle" class="toggle-dark" title="Byt tema">🌓</button>
   </header>
 
@@ -71,6 +80,9 @@
       <div class="row">
         <button id="loginBtn" class="pill">Logga in</button>
         <button id="registerBtn" class="pill secondary">Skapa konto</button>
+        <button id="googleBtn" class="pill gbtn">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt=""> Logga in med Google
+        </button>
         <button id="logoutBtn" class="pill" style="display:none">Logga ut</button>
       </div>
     </section>
@@ -127,19 +139,19 @@
   <!-- Alarm-ljud -->
   <audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
-  <!-- Firebase SDK (modul-CDN) -->
+  <!-- Firebase + app-logik -->
   <script type="module">
-    // ---- Firebase imports ----
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
     import {
       getAuth, onAuthStateChanged,
-      signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut
+      signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
+      GoogleAuthProvider, signInWithPopup
     } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
     import {
-      getFirestore, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp
+      getFirestore, collection, addDoc, getDocs, query, where, orderBy,
+      serverTimestamp, setDoc, doc
     } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-    // ---- Config (din) ----
     const firebaseConfig = {
       apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
       authDomain: "queerjournal-1cc9d.firebaseapp.com",
@@ -150,22 +162,26 @@
       measurementId: "G-0T6JCFJCFZ"
     };
 
-    // ---- Init ----
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getFirestore(app);
 
-    // ---- UI refs ----
+    // UI refs
     const emailEl = document.getElementById('emailInput');
     const passEl  = document.getElementById('passwordInput');
     const loginBtn = document.getElementById('loginBtn');
     const registerBtn = document.getElementById('registerBtn');
+    const googleBtn = document.getElementById('googleBtn');
     const logoutBtn = document.getElementById('logoutBtn');
 
     const authSection  = document.getElementById('authSection');
     const noteSection  = document.getElementById('noteSection');
     const notesSection = document.getElementById('notesSection');
     const notesList    = document.getElementById('notesList');
+
+    const userChip  = document.getElementById('userChip');
+    const userName  = document.getElementById('userName');
+    const userPhoto = document.getElementById('userPhoto');
 
     const dateInput=document.getElementById('dateInput');
     const timeInput=document.getElementById('timeInput');
@@ -174,57 +190,77 @@
     const contentInput=document.getElementById('contentInput');
     const imageInput=document.getElementById('imageInput');
     const alarmCheck=document.getElementById('alarmCheck');
-
     const saveBtn=document.getElementById('saveBtn');
     const clearBtn=document.getElementById('clearBtn');
 
-    // ---- Helpers ----
+    // Helpers
     const today=()=> new Date().toISOString().slice(0,10);
     const now=()=> new Date().toTimeString().slice(0,5);
     dateInput.value=today(); timeInput.value=now();
 
-    // Notiser: be om tillstånd
     if ("Notification" in window && Notification.permission!=="granted"){
       Notification.requestPermission();
     }
 
-    // Lokal cache för offline visning
     const CACHE_KEY="qj.cached.notes.v1";
-    function cacheSet(arr){localStorage.setItem(CACHE_KEY,JSON.stringify(arr));}
-    function cacheGet(){try{return JSON.parse(localStorage.getItem(CACHE_KEY)||"[]");}catch{return [];}}
+    const cacheSet = arr => localStorage.setItem(CACHE_KEY,JSON.stringify(arr));
+    const cacheGet = () => {try{return JSON.parse(localStorage.getItem(CACHE_KEY)||"[]");}catch{return [];}};
 
-    // ---- Auth actions ----
+    // Auth
     registerBtn.onclick = async () => {
       try{
-        await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
+        const cred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
+        await setDoc(doc(db,"users",cred.user.uid),{
+          email: cred.user.email || "",
+          createdAt: serverTimestamp()
+        },{merge:true});
         alert("Konto skapat!");
       }catch(e){alert(e.message);}
     };
+
     loginBtn.onclick = async () => {
-      try{
-        await signInWithEmailAndPassword(auth, emailEl.value, passEl.value);
-      }catch(e){alert(e.message);}
+      try{ await signInWithEmailAndPassword(auth, emailEl.value, passEl.value); }
+      catch(e){ alert(e.message); }
     };
+
+    googleBtn.onclick = async () => {
+      try{
+        const provider = new GoogleAuthProvider();
+        const res = await signInWithPopup(auth, provider);
+        const u = res.user;
+        await setDoc(doc(db,"users",u.uid),{
+          displayName: u.displayName || "",
+          email: u.email || "",
+          photoURL: u.photoURL || "",
+          createdAt: serverTimestamp()
+        },{merge:true});
+      }catch(e){ alert(e.message); }
+    };
+
     logoutBtn.onclick = () => signOut(auth);
 
-    // Visa/Hide beroende på auth
     onAuthStateChanged(auth, async (user)=>{
       if(user){
         authSection.style.display='none';
         noteSection.style.display='block';
         notesSection.style.display='block';
         logoutBtn.style.display='';
-        await loadNotes(user.uid);                   // hämta från Firestore
-        rescheduleAll();                             // schemalägg alarm
+        userChip.style.display='';
+        userName.textContent = user.displayName || user.email || 'Inloggad';
+        userPhoto.src = user.photoURL || 'android-chrome-192x192.png';
+
+        await loadNotes(user.uid);
+        rescheduleAll();
       }else{
         authSection.style.display='block';
         noteSection.style.display='none';
         notesSection.style.display='none';
         logoutBtn.style.display='none';
+        userChip.style.display='none';
       }
     });
 
-    // ---- Save note ----
+    // Spara anteckning
     saveBtn.onclick = async () => {
       const user = auth.currentUser;
       if(!user){alert("Logga in först.");return;}
@@ -250,7 +286,6 @@
 
       try{
         await addDoc(collection(db,"notes"), note);
-        alert("Sparad!");
         clearForm();
         await loadNotes(user.uid);
         if(note.alarm) scheduleAlarm(note);
@@ -263,38 +298,35 @@
       dateInput.value=today(); timeInput.value=now();
     }
 
-    // ---- Load notes (per user) ----
+    // Hämta anteckningar (per användare)
     let currentNotes = [];
     async function loadNotes(uid){
       notesList.innerHTML="Laddar…";
       try{
-        const q=query(collection(db,"notes"), where("uid","==",uid), orderBy("date","desc"));
+        const q=query(
+          collection(db,"notes"),
+          where("uid","==",uid),
+          orderBy("date","desc")
+        );
         const snap=await getDocs(q);
         const arr=[];
-        snap.forEach(doc=>{
-          const d=doc.data();
-          arr.push(d);
-        });
+        snap.forEach(doc=>arr.push(doc.data()));
         currentNotes = arr.sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
         cacheSet(currentNotes);
         render();
       }catch(e){
-        // offline? visa cache
-        currentNotes = cacheGet();
+        currentNotes = cacheGet(); // offline fallback
         render();
       }
     }
 
-    // ---- Views ----
+    // Vyer
     let viewMode="list";
+    const setActive=id=>{document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');};
     document.getElementById('listViewBtn').onclick=()=>{setActive('listViewBtn');viewMode='list';render();};
     document.getElementById('dayViewBtn').onclick =()=>{setActive('dayViewBtn');viewMode='day';render();};
     document.getElementById('weekViewBtn').onclick=()=>{setActive('weekViewBtn');viewMode='week';render();};
     document.getElementById('alarmViewBtn').onclick=()=>{setActive('alarmViewBtn');viewMode='alarm';render();};
-    function setActive(id){
-      document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
 
     function render(){
       if(!currentNotes.length){notesList.innerHTML='<div class="empty">Inga anteckningar.</div>';return;}
@@ -328,13 +360,12 @@
       });
     }
 
-    // ---- Alarm ----
+    // Alarm
     function scheduleAlarm(note){
       if(!note.date||!note.time) return;
       const dt=new Date(note.date+"T"+note.time);
       const diff=dt.getTime()-Date.now();
-      if(diff<=0) return; // för sent
-
+      if(diff<=0) return;
       setTimeout(()=>triggerAlarm(note), diff);
     }
     function triggerAlarm(note){
@@ -351,12 +382,11 @@
       currentNotes.filter(n=>n.alarm).forEach(scheduleAlarm);
     }
 
-    // ---- Theme toggle ----
+    // Tema
     document.getElementById('darkToggle').onclick=()=> document.body.classList.toggle('dark');
-
   </script>
 
-  <!-- Service worker registrering -->
+  <!-- Service worker -->
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
