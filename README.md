@@ -1,34 +1,32 @@
 # 🌈 Queer Journal
 
-**Queer Journal** is a simple, offline-first PWA (Progressive Web App) for notes, memos, schedules, and journaling — built with love for the spectrum.  
+En enkel, offline-first **schema-, memo- och dagboksapp** byggd med **HTML, CSS & JavaScript**.  
+Appen fungerar som **PWA (Progressive Web App)** – du kan installera den på mobilen eller datorn och använda den helt offline.
 
-✨ Features:
-- 📝 Add daily notes with **date, time, mood, tags, and optional images**  
-- 🔒 **PIN lock** to keep your journal private  
-- ⏰ Set **alarms/reminders** that play a sound + browser notification  
-- 🔍 Search & filter by text or tags  
-- 💾 Import/Export all entries as `.json` (your data stays local in your browser)  
-- 📆 Switch views: **List, Day, Week, Alarm**  
-- 📱 Installable as a PWA (works offline, add to homescreen)  
+👉 **Live demo:** [Queer Journal](https://robynt98.github.io/queerjournal/)
 
 ---
 
-## 🚀 Demo
-👉 [Open the app](https://robynt98.github.io/queerjournal/)  
-
-*(Works best in Chrome, Edge, or mobile browsers with PWA support.)*
+## ✨ Funktioner
+- 📅 Skapa anteckningar med datum & tid  
+- ⏰ Ställ in alarm för viktiga händelser  
+- 😍 Välj känsla/emojis som passar  
+- 🏷️ Lägg till taggar för att sortera  
+- 🖼️ Ladda upp bilder till anteckningar  
+- 🔍 Sök & filtrera anteckningar  
+- 📥 Importera / 📤 Exportera dina anteckningar som JSON  
+- 🔒 PIN-skydd för extra integritet  
+- 🌈 HBTQ-vänlig design med fokus på inkludering  
+- 📱 Installera som app via PWA (fungerar offline)
 
 ---
 
-## 🛠 Tech
-- Pure **HTML / CSS / JavaScript**
-- **LocalStorage** for saving entries
-- **Service Worker** for offline support
-- Deployable via **GitHub Pages**
+## 🚀 Installation
 
----
+Du kan använda appen direkt via GitHub Pages:  
+[https://robynt98.github.io/queerjournal/](https://robynt98.github.io/queerjournal/)
 
-## 📦 Installation
-1. Clone this repo  
+Vill du köra lokalt?  
+1. Klona repot:  
    ```bash
    git clone https://github.com/RobynT98/queerjournal.git
