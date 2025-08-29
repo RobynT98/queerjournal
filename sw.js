@@ -1,5 +1,5 @@
 // sw.js
-const CACHE = 'qj-cache-v3-2025-08-29';
+const CACHE = 'qj-cache-v4-2025-08-29';
 const ASSETS = [
   './',
   './index.html',
