@@ -14,10 +14,7 @@
       color: #222;
       transition: background 0.3s, color 0.3s;
     }
-    body.dark {
-      background: #121212;
-      color: #eee;
-    }
+    body.dark { background: #121212; color: #eee; }
 
     header {
       display: flex;
@@ -27,28 +24,18 @@
       background: linear-gradient(90deg, #d53369, #daae51);
       color: white;
     }
-    header h1 {
-      margin: 0;
-      font-size: 1.2rem;
-    }
-
+    header h1 { margin: 0; font-size: 1.2rem; }
     .toggle-dark {
       cursor: pointer;
       background: rgba(255,255,255,0.2);
       border: none;
       border-radius: 50%;
-      width: 35px;
-      height: 35px;
+      width: 35px; height: 35px;
       color: white;
       font-size: 1rem;
     }
 
-    main {
-      padding: 1rem;
-      display: grid;
-      gap: 1rem;
-    }
-
+    main { padding: 1rem; display: grid; gap: 1rem; }
     .card {
       background: white;
       border-radius: 12px;
@@ -56,53 +43,30 @@
       box-shadow: 0 3px 6px rgba(0,0,0,0.1);
       transition: transform 0.2s;
     }
-    body.dark .card {
-      background: #1f1f1f;
-    }
-    .card:hover {
-      transform: scale(1.01);
-    }
+    body.dark .card { background: #1f1f1f; }
+    .card:hover { transform: scale(1.01); }
 
     footer {
-      display: flex;
-      justify-content: space-around;
-      background: #eee;
-      padding: 0.6rem 0;
-      position: fixed;
-      bottom: 0;
-      width: 100%;
+      display: flex; justify-content: space-around;
+      background: #eee; padding: 0.6rem 0;
+      position: fixed; bottom: 0; width: 100%;
     }
-    body.dark footer {
-      background: #1e1e1e;
-    }
+    body.dark footer { background: #1e1e1e; }
 
-    .tab {
-      flex: 1;
-      text-align: center;
-      padding: 0.5rem;
-      border: none;
-      background: transparent;
-      font-size: 0.9rem;
-      cursor: pointer;
-      color: inherit;
-    }
-    .tab.active {
-      font-weight: 600;
-      border-bottom: 2px solid #d53369;
-    }
+    .tab { flex: 1; text-align: center; padding: 0.5rem; border: none; background: transparent; font-size: 0.9rem; cursor: pointer; color: inherit; }
+    .tab.active { font-weight: 600; border-bottom: 2px solid #d53369; }
 
-    button, input, textarea, select {
-      font-family: inherit;
-    }
-
+    button, input, textarea, select { font-family: inherit; }
     .pill {
-      border-radius: 20px;
-      padding: 0.4rem 0.9rem;
-      border: none;
-      cursor: pointer;
+      border-radius: 20px; padding: 0.4rem 0.9rem;
+      border: none; cursor: pointer;
       background: linear-gradient(90deg, #6a11cb, #2575fc);
       color: white;
     }
+    .pill.secondary { background:#ccc; color:#222; }
+
+    .auth-form input { margin: 0.3rem 0; width: 100%; padding: 0.5rem; }
+    .auth-form button { margin-top: 0.5rem; width: 100%; }
   </style>
 </head>
 <body>
@@ -112,27 +76,41 @@
   </header>
 
   <main>
+    <!-- Auth -->
+    <section class="card" id="authSection">
+      <h2>Logga in / Skapa konto</h2>
+      <div class="auth-form">
+        <input type="email" id="emailInput" placeholder="E-post">
+        <input type="password" id="passwordInput" placeholder="Lösenord">
+        <button class="pill" id="loginBtn">Logga in</button>
+        <button class="pill secondary" id="registerBtn">Skapa konto</button>
+      </div>
+      <button class="pill" id="logoutBtn" style="display:none;">Logga ut</button>
+    </section>
+
     <!-- Ny anteckning -->
-    <section class="card">
+    <section class="card" id="noteSection" style="display:none;">
       <h2>Ny anteckning</h2>
       <label>Datum <input type="date" id="dateInput"></label><br>
       <label>Tid <input type="time" id="timeInput"></label><br>
       <label><input type="checkbox" id="alarmCheck"> ⏰ Ställ alarm</label><br>
-      <label>Känsla <select id="moodInput">
-        <option value="">--</option>
-        <option>Glad</option>
-        <option>Ledsen</option>
-        <option>Stolt</option>
-      </select></label><br>
+      <label>Känsla 
+        <select id="moodInput">
+          <option value="">--</option>
+          <option>Glad</option>
+          <option>Ledsen</option>
+          <option>Stolt</option>
+        </select>
+      </label><br>
       <label>Taggar <input type="text" id="tagsInput"></label><br>
       <textarea id="contentInput" placeholder="t.ex. 1/2 påse blötmat"></textarea><br>
       <input type="file" id="imageInput"><br><br>
       <button class="pill" id="saveBtn">Spara</button>
-      <button class="pill" style="background:#ccc;color:#222;">Rensa</button>
+      <button class="pill secondary" id="clearBtn">Rensa</button>
     </section>
 
     <!-- Lista anteckningar -->
-    <section class="card">
+    <section class="card" id="notesSection" style="display:none;">
       <h2>Mina anteckningar</h2>
       <div id="notesList">Inga anteckningar.</div>
     </section>
@@ -147,11 +125,108 @@
 
   <audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
-  <script>
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
+      authDomain: "queerjournal-1cc9d.firebaseapp.com",
+      projectId: "queerjournal-1cc9d",
+      storageBucket: "queerjournal-1cc9d.firebasestorage.app",
+      messagingSenderId: "53325952423",
+      appId: "1:53325952423:web:24837ecc436332e436b282",
+      measurementId: "G-0T6JCFJCFZ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const emailInput = document.getElementById("emailInput");
+    const passwordInput = document.getElementById("passwordInput");
+    const loginBtn = document.getElementById("loginBtn");
+    const registerBtn = document.getElementById("registerBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    const authSection = document.getElementById("authSection");
+    const noteSection = document.getElementById("noteSection");
+    const notesSection = document.getElementById("notesSection");
+
+    // Auth state
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        authSection.style.display = "none";
+        noteSection.style.display = "block";
+        notesSection.style.display = "block";
+        logoutBtn.style.display = "block";
+        loadNotes();
+      } else {
+        authSection.style.display = "block";
+        noteSection.style.display = "none";
+        notesSection.style.display = "none";
+        logoutBtn.style.display = "none";
+      }
+    });
+
+    registerBtn.onclick = async () => {
+      try {
+        await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+        alert("Konto skapat!");
+      } catch (e) { alert(e.message); }
+    };
+    loginBtn.onclick = async () => {
+      try {
+        await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+        alert("Inloggad!");
+      } catch (e) { alert(e.message); }
+    };
+    logoutBtn.onclick = async () => { await signOut(auth); };
+
+    // Notes
+    const saveBtn = document.getElementById("saveBtn");
+    const notesList = document.getElementById("notesList");
+
+    saveBtn.onclick = async () => {
+      const content = document.getElementById("contentInput").value;
+      if (!content) return alert("Skriv något!");
+      try {
+        await addDoc(collection(db, "notes"), {
+          text: content,
+          date: new Date()
+        });
+        alert("Sparad!");
+        loadNotes();
+      } catch (e) { alert(e.message); }
+    };
+
+    async function loadNotes() {
+      notesList.innerHTML = "";
+      const querySnapshot = await getDocs(collection(db, "notes"));
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const div = document.createElement("div");
+        div.textContent = data.text + " (" + (data.date?.toDate?.() || new Date()).toLocaleString() + ")";
+        notesList.appendChild(div);
+      });
+      if (!notesList.innerHTML) notesList.innerHTML = "Inga anteckningar.";
+    }
+
     // Dark mode toggle
     document.getElementById("darkToggle").onclick = () => {
       document.body.classList.toggle("dark");
     };
   </script>
+  <script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js")
+        .then(reg => console.log("Service Worker registrerad:", reg.scope))
+        .catch(err => console.log("SW error:", err));
+    });
+  }
+  </script>
 </body>
-</html>
+      </html>
