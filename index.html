@@ -1,270 +1,168 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Queer Journal</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#7b5cff">
   <style>
-    :root {
-      --bg:#0f0f12; --card:#16161b; --text:#f5f5f7; --muted:#a8a8b3;
-      --brand:#7b5cff; --focus:#00ffc2; --danger:#ff4d6d;
-    }
-    @media(prefers-color-scheme:light){
-      :root{--bg:#f9fafb;--card:#fff;--text:#111827;--muted:#6b7280;--brand:#6d28d9;--focus:#0ea5e9;--danger:#dc2626;}
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:sans-serif;background:var(--bg);color:var(--text)}
-    header,main,footer{max-width:860px;margin:0 auto;padding:1rem}
-    header{display:flex;align-items:center;gap:.75rem}
-    .logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#ff006e,#fb5607,#ffbe0b,#3a86ff,#8338ec)}
-    .sub{color:var(--muted);font-size:.9rem}
-    button,input,select,textarea{font:inherit;color:inherit;background:var(--card);border:1px solid #2a2a32;border-radius:.75rem;padding:.5rem .8rem}
-    button{background:var(--brand);border-color:transparent;cursor:pointer}
-    .grid{display:grid;gap:.75rem}
-    @media(min-width:800px){.grid{grid-template-columns:320px 1fr}}
-    .card{background:var(--card);border:1px solid #2a2a32;border-radius:1rem;padding:.9rem}
-    .row{display:flex;gap:.5rem;flex-wrap:wrap}
-    .pill{border-radius:999px;padding:.25rem .6rem;border:1px solid #3a3a44;background:transparent}
-    .danger{background:var(--danger);color:#fff;border:0}
-    footer{color:var(--muted);font-size:.85rem}
-    #pinOverlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f0f12;color:#f5f5f7;z-index:9999}
-    /* Alarm toggle styling */
-    #alarm {
-      width: 22px;
-      height: 22px;
-      accent-color: var(--brand);
-    }
-    label.alarm-label {
-      display:flex;
-      align-items:center;
-      gap:.6rem;
-      margin:.6rem 0;
-      font-weight:bold;
-    }
-    #alarmViewBtn {
-  background: var(--focus);
-  color: #000;
-  font-weight: bold;
-}
+    body { font-family: sans-serif; margin: 1rem; }
+    .pill { padding: .5rem 1rem; margin: .2rem; border-radius: 15px; border: 1px solid #333; }
+    .danger { background: red; color: white; }
+    .row { display: flex; gap: .5rem; flex-wrap: wrap; }
   </style>
 </head>
 <body>
-  <!-- PIN -->
-  <div id="pinOverlay">
-    <h2 id="pinTitle">Ange PIN</h2>
-    <input id="pinInput" type="password" inputmode="numeric" placeholder="PIN">
-    <div class="row" style="margin-top:.5rem">
-      <button id="pinBtn">OK</button>
-      <button id="resetBtn" class="pill danger">Glömt PIN?</button>
-    </div>
-    <p id="pinMsg"></p>
-  </div>
-
   <header>
-    <div class="logo"></div>
-    <div><h1>Queer Journal</h1><div class="sub">Schema · Memo · Dagbok – offline & privat</div></div>
+    <h1>🌈 Queer Journal</h1>
+    <p>Schema • Memo • Dagbok – offline & privat</p>
   </header>
 
-  <main class="grid">
-    <!-- Vänster: formulär -->
-    <section class="card">
+  <main>
+    <section>
       <h2>Ny anteckning</h2>
       <label>Datum <input id="date" type="date"></label>
       <label>Tid <input id="time" type="time"></label>
-
-      <!-- Alarm toggle -->
-      <label class="alarm-label">
-        <input type="checkbox" id="alarm">
-        <span>⏰ Ställ alarm</span>
-      </label>
-
-      <label>Känsla
-        <select id="mood">
-          <option></option><option>🌈 Proud</option><option>😊 Lugn</option>
-          <option>😤 Frustrerad</option><option>😢 Ledsen</option><option>🔥 Taggad</option>
-        </select>
-      </label>
+      <label><input id="setAlarm" type="checkbox"> ⏰ Ställ alarm</label>
+      <br>
+      <label>Känsla <select id="feeling">
+        <option value="">–</option>
+        <option>Glad</option>
+        <option>Ledsen</option>
+        <option>Stolt</option>
+      </select></label>
       <label>Taggar <input id="tags" type="text"></label>
-      <label>Innehåll <textarea id="content" rows="5" placeholder="t.ex. 1/2 påse blötmat"></textarea></label>
-      <label for="image">Bild (valfritt)</label>
-      <input id="image" type="file" accept="image/*">
-
-      <div class="row" style="margin-top:.5rem">
-        <button id="saveBtn">Spara</button>
-        <button id="clearBtn" class="pill">Rensa</button>
-      </div>
-
-      <hr>
-      <h3>Filter</h3>
-      <input id="search" type="search" placeholder="sök text">
-      <input id="tagFilter" type="text" placeholder="filtrera på tagg">
-      <div class="row" style="margin-top:.5rem">
-        <button id="exportBtn" class="pill">Exportera</button>
-        <button id="importBtn" class="pill">Importera</button>
-        <input id="fileInput" type="file" accept=".json" style="display:none">
-      </div>
+      <br>
+      <textarea id="content" placeholder="t.ex. 1/2 påse blötmat" rows="4" cols="30"></textarea>
+      <br>
+      <label>Bild (valfritt) <input id="image" type="file" accept="image/*"></label>
+      <br>
+      <button id="saveBtn" class="pill">Spara</button>
+      <button id="clearBtn" class="pill">Rensa</button>
     </section>
 
-    <!-- Höger: lista/kalender -->
-    <section class="card">
+    <section>
+      <h2>Filter</h2>
+      <input id="searchText" type="text" placeholder="sök text">
+      <input id="tagFilter" type="text" placeholder="filtrera på tagg">
+      <br>
+      <button id="exportBtn" class="pill">Exportera</button>
+      <button id="importBtn" class="pill">Importera</button>
+      <input id="fileInput" type="file" accept=".json" style="display:none">
+    </section>
+
+    <section>
       <h2>Mina anteckningar</h2>
-      <div id="list"></div>
-      <template id="entryTpl">
-        <article class="card">
-          <h3></h3>
-          <div class="muted"></div>
-          <p></p>
-          <img style="max-width:100%;border-radius:.5rem;display:none">
-          <div class="row">
-            <button class="pill" data-edit>Redigera</button>
-            <button class="pill danger" data-delete>Radera</button>
-          </div>
-        </article>
-      </template>
+      <div id="entries"></div>
     </section>
   </main>
 
-<footer>
-  <div class="row">
-    <button id="listViewBtn" class="pill">Lista</button>
-    <button id="dayViewBtn" class="pill">Dag</button>
-    <button id="weekViewBtn" class="pill">Vecka</button>
-    <button id="alarmViewBtn" class="pill">Alarm</button>
-  </div>
-</footer>
+  <footer>
+    <div class="row">
+      <button id="listViewBtn" class="pill">Lista</button>
+      <button id="dayViewBtn" class="pill">Dag</button>
+      <button id="weekViewBtn" class="pill">Vecka</button>
+      <button id="alarmViewBtn" class="pill">Alarm</button>
+    </div>
+  </footer>
+
+  <!-- Alarm-ljud -->
   <audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
 <script>
-/* Service worker */
-if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js');}
+let state = { entries: [] };
+let viewMode = "list";
 
-/* State */
-const DB_KEY='qj.entries.v1';
-const state={entries:JSON.parse(localStorage.getItem(DB_KEY)||'[]'),search:'',tag:''};
-const today=()=>new Date().toISOString().slice(0,10);
-const now=()=>new Date().toTimeString().slice(0,5);
-date.value=today();time.value=now();
-
-/* PIN */
-const PIN_KEY='qj.pin', SALT_KEY='qj.salt', ATTEMPTS_KEY='qj.attempts';
-let lockedUntil=0;
-async function sha256(s){const b=new TextEncoder().encode(s);const h=await crypto.subtle.digest('SHA-256',b);return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('');}
-async function checkPin(pin){const salt=localStorage.getItem(SALT_KEY);return await sha256(pin+salt)===localStorage.getItem(PIN_KEY);}
-async function setPin(pin){const salt=Date.now()+'';localStorage.setItem(SALT_KEY,salt);localStorage.setItem(PIN_KEY,await sha256(pin+salt));}
-if(!localStorage.getItem(PIN_KEY))pinTitle.textContent='Skapa PIN';
-pinBtn.onclick=async()=>{const val=pinInput.value;if(!val)return;
-  if(!localStorage.getItem(PIN_KEY)){await setPin(val);pinOverlay.style.display='none';}
-  else{if(Date.now()<lockedUntil){pinMsg.textContent='Låst 30s';return;}
-    if(await checkPin(val)){pinOverlay.style.display='none';localStorage.removeItem(ATTEMPTS_KEY);}
-    else{let a=+(localStorage.getItem(ATTEMPTS_KEY)||0)+1;localStorage.setItem(ATTEMPTS_KEY,a);
-      if(a>=5){lockedUntil=Date.now()+30000;pinMsg.textContent='För många försök';}
-      else pinMsg.textContent='Fel PIN';}}pinInput.value='';};
-resetBtn.onclick=()=>{if(confirm('Radera ALLT?')){localStorage.clear();location.reload();}};
-/* Helpers */
-function save(){localStorage.setItem(DB_KEY,JSON.stringify(state.entries));render();}
-function clearForm(){['content','tags','mood'].forEach(i=>document.getElementById(i).value='');date.value=today();time.value=now();alarm.checked=false;image.value='';}
-function deriveTitle(t,m){const f=(t||'').split(/\n|\.\s/)[0].slice(0,30);return(m?m+' – ':'')+(f||'Anteckning');}
-
-/* Add entry */
-saveBtn.onclick=()=>{
-  const file=image.files[0];
-  if(file){const r=new FileReader();r.onload=()=>finishAdd(r.result);r.readAsDataURL(file);}
-  else finishAdd(null);
-};
-function finishAdd(img){
-  const e={id:crypto.randomUUID(),date:date.value,time:time.value,mood:mood.value,tags:(tags.value||'').split(',').map(s=>s.trim()).filter(Boolean),content:content.value.trim(),image:img,alarm:alarm.checked,title:deriveTitle(content.value,mood.value)};
-  state.entries.push(e);save();clearForm();if(e.alarm)scheduleAlarm(e);
+// Be om tillstånd för notiser
+if ("Notification" in window && Notification.permission !== "granted") {
+  Notification.requestPermission();
 }
-function editEntry(id){const e=state.entries.find(x=>x.id===id);if(!e)return;date.value=e.date;time.value=e.time;mood.value=e.mood;tags.value=(e.tags||[]).join(', ');content.value=e.content;alarm.checked=e.alarm||false;state.entries=state.entries.filter(x=>x.id!==id);save();window.scrollTo(0,0);}
-function deleteEntry(id){if(confirm('Radera?')){state.entries=state.entries.filter(x=>x.id!==id);save();}}
 
-/* Views */
-let viewMode='list';
-function render(){
-  const list=document.getElementById('list');list.innerHTML='';
-  let entries=state.entries.filter(e=>
-    (!state.search||e.content.toLowerCase().includes(state.search.toLowerCase())) &&
-    (!state.tag||(e.tags||[]).some(t=>t.toLowerCase().includes(state.tag.toLowerCase())))
-  ).sort((a,b)=>(b.date+a.time).localeCompare(a.date+b.time));
+function save() {
+  localStorage.setItem("entries", JSON.stringify(state.entries));
+}
 
-  if(viewMode==='day') entries=entries.filter(e=>e.date===today());
+function load() {
+  const saved = localStorage.getItem("entries");
+  if (saved) state.entries = JSON.parse(saved);
+}
 
-  if(viewMode==='week'){
-    const d=new Date();
-    const day=d.getDay()||7;
-    const mon=new Date(d);mon.setDate(d.getDate()-day+1);
-    const sun=new Date(mon);sun.setDate(mon.getDate()+6);
-    entries=entries.filter(e=>e.date>=mon.toISOString().slice(0,10)&&e.date<=sun.toISOString().slice(0,10));
-    const g=document.createElement('div');
-    g.style.display='grid';g.style.gridTemplateColumns='repeat(7,1fr)';
-    const names=['Mån','Tis','Ons','Tor','Fre','Lör','Sön'];
-    for(let i=0;i<7;i++){
-      const col=document.createElement('div');col.className='card';
-      const d2=new Date(mon);d2.setDate(mon.getDate()+i);
-      const iso=d2.toISOString().slice(0,10);
-      col.innerHTML='<strong>'+names[i]+'</strong>';
-      entries.filter(e=>e.date===iso).forEach(e=>{
-        const p=document.createElement('p');
-        p.textContent=(e.time||'')+' '+e.content;
-        col.appendChild(p);
-      });
-      g.appendChild(col);
-    }
-    list.appendChild(g);return;
+function render() {
+  const container = document.getElementById("entries");
+  container.innerHTML = "";
+  if (state.entries.length === 0) {
+    container.textContent = "Inga anteckningar.";
+    return;
   }
-
-  if(viewMode==='alarm'){
-    const nowTime=new Date();
-    entries=entries.filter(e=>{
-      if(!e.alarm) return false;
-      const dt=new Date(e.date+"T"+e.time);
-      return dt>nowTime;
-    });
-  }
-
-  if(!entries.length){list.innerHTML='<p>Inga anteckningar.</p>';return;}
-
-  entries.forEach(e=>{
-    const n=entryTpl.content.cloneNode(true);
-    n.querySelector('h3').textContent=e.title;
-    n.querySelector('.muted').textContent=e.date+' '+e.time+(e.alarm?' ⏰':'');
-    n.querySelector('p').textContent=e.content;
-    if(e.image){const img=n.querySelector('img');img.src=e.image;img.style.display='block';}
-    n.querySelector('[data-edit]').onclick=()=>editEntry(e.id);
-    n.querySelector('[data-delete]').onclick=()=>deleteEntry(e.id);
-    list.appendChild(n);
+  state.entries.forEach((note, idx) => {
+    const div = document.createElement("div");
+    div.style.border = "1px solid #ccc";
+    div.style.margin = ".5rem 0";
+    div.style.padding = ".5rem";
+    div.innerHTML = `
+      <strong>${note.feeling || "🌈"} – ${note.tags || ""}</strong>
+      <br>${note.date} ${note.time} ${note.alarm ? "⏰" : ""}
+      <p>${note.content}</p>
+      <button onclick="deleteEntry(${idx})" class="pill danger">Radera</button>
+    `;
+    container.appendChild(div);
   });
 }
-/* Alarm */
-function scheduleAlarm(e){
-  const dt=new Date(e.date+"T"+e.time);
-  const diff=dt-Date.now();
-  if(diff>0)setTimeout(()=>{
-    alert("⏰ "+e.content);
-    alarmSound.play();
-    if(Notification.permission==="granted") new Notification("Alarm",{body:e.content});
-  },diff);
-}
-if(Notification&&Notification.permission!=="granted"){Notification.requestPermission();}
-state.entries.forEach(e=>{if(e.alarm)scheduleAlarm(e);});
 
-/* Filters + Import/Export */
-search.oninput=e=>{state.search=e.target.value;render();};
-tagFilter.oninput=e=>{state.tag=e.target.value;render();};
-clearBtn.onclick=clearForm;
-exportBtn.onclick=()=>{const b=new Blob([JSON.stringify(state.entries,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='entries.json';a.click();};
-importBtn.onclick=()=>fileInput.click();
-fileInput.onchange=async e=>{const f=e.target.files[0];if(!f)return;const t=await f.text();try{const arr=JSON.parse(t);if(Array.isArray(arr)){state.entries=arr;save();}}catch{alert('Fel fil');}};
-listViewBtn.onclick=()=>{viewMode='list';render();};
-dayViewBtn.onclick=()=>{viewMode='day';render();};
-weekViewBtn.onclick=()=>{viewMode='week';render();};
-alarmViewBtn.onclick = () => {
-  viewMode = 'alarm';
+function deleteEntry(idx) {
+  state.entries.splice(idx, 1);
+  save();
   render();
+}
+
+function triggerAlarm(note) {
+  // 1. spela ljud
+  const sound = document.getElementById("alarmSound");
+  if (sound) {
+    sound.play().catch(err => console.log("Kan inte spela ljud:", err));
+  }
+  // 2. systemnotis
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification("⏰ Alarm!", {
+      body: note.content || "Dags att kolla din anteckning!",
+      icon: "icons/icon-192.png"
+    });
+  } else {
+    alert("⏰ " + (note.content || "Alarm!"));
+  }
+}
+
+document.getElementById("saveBtn").onclick = () => {
+  const note = {
+    date: document.getElementById("date").value,
+    time: document.getElementById("time").value,
+    alarm: document.getElementById("setAlarm").checked,
+    feeling: document.getElementById("feeling").value,
+    tags: document.getElementById("tags").value,
+    content: document.getElementById("content").value
+  };
+  state.entries.push(note);
+  save();
+  render();
+
+  // Om alarm är satt
+  if (note.alarm && note.date && note.time) {
+    const now = new Date().getTime();
+    const alarmTime = new Date(note.date + "T" + note.time).getTime();
+    const delay = alarmTime - now;
+    if (delay > 0) {
+      setTimeout(() => triggerAlarm(note), delay);
+    }
+  }
 };
+
+document.getElementById("clearBtn").onclick = () => {
+  document.getElementById("content").value = "";
+  document.getElementById("tags").value = "";
+};
+
+load();
 render();
 </script>
 </body>
-</html>
+                                                                              </html>
