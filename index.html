@@ -274,7 +274,7 @@
     async function setupPush(user){
       if (!messaging) return;
       try{
-        const vapidKey = "PASTE_YOUR_VAPID_PUBLIC_KEY_HERE"; // lägg din VAPID key här
+        const vapidKey = "BCfqKb1YvwfuGzZLJJ2ETaBdGLwWYVoeAB1zSlyA7CxvTelJqJCrwGL5Z5XjV2rRgLohBuWGYOmAaIHzTPTxbDk";
         if (vapidKey.includes("PASTE")) return;
         const permission = await Notification.requestPermission();
         if (permission !== "granted") return;
