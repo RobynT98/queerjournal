@@ -62,13 +62,14 @@
 </head>
 <body>
   <script>
-  // Döda ev. gammalt PIN-lås från tidigare versioner
-  try {
-    ['qj.pin','qj.salt','qj.attempts'].forEach(k => localStorage.removeItem(k));
-    const pinEl = document.getElementById('pinOverlay');
-    if (pinEl) pinEl.style.display = 'none';
-  } catch {}
+    /* Döda ev. gammalt PIN-lås från äldre versioner */
+    try {
+      ['qj.pin','qj.salt','qj.attempts'].forEach(k => localStorage.removeItem(k));
+      const pinEl = document.getElementById('pinOverlay');
+      if (pinEl) pinEl.style.display = 'none';
+    } catch {}
   </script>
+
   <header>
     <h1>🌈 Queer Journal</h1>
     <div class="user-chip" id="userChip" style="display:none">
@@ -149,6 +150,7 @@
 
   <!-- Firebase + app-logik -->
   <script type="module">
+    // ---------------- Firebase imports ----------------
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
     import {
       getAuth, onAuthStateChanged,
@@ -156,10 +158,15 @@
       GoogleAuthProvider, signInWithPopup
     } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
     import {
-      getFirestore, collection, addDoc, getDocs, query, where, orderBy,
-      serverTimestamp, setDoc, doc
+      getFirestore, collection, addDoc, query, where, orderBy,
+      serverTimestamp, onSnapshot, doc, getDoc, setDoc,
+      enableIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import {
+      getMessaging, getToken, onMessage
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging.js";
 
+    // ---------------- Config ----------------
     const firebaseConfig = {
       apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
       authDomain: "queerjournal-1cc9d.firebaseapp.com",
@@ -170,11 +177,19 @@
       measurementId: "G-0T6JCFJCFZ"
     };
 
+    // ---------------- Init ----------------
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getFirestore(app);
 
-    // UI refs
+    // Firestore offline cache
+    enableIndexedDbPersistence(db).catch(()=>{/* redan aktiv eller ej stöd */});
+
+    // (valfritt) Cloud Messaging
+    let messaging = null;
+    try { messaging = getMessaging(app); } catch {}
+
+    // ---------------- UI refs ----------------
     const emailEl = document.getElementById('emailInput');
     const passEl  = document.getElementById('passwordInput');
     const loginBtn = document.getElementById('loginBtn');
@@ -198,6 +213,7 @@
     const contentInput=document.getElementById('contentInput');
     const imageInput=document.getElementById('imageInput');
     const alarmCheck=document.getElementById('alarmCheck');
+
     const saveBtn=document.getElementById('saveBtn');
     const clearBtn=document.getElementById('clearBtn');
 
@@ -210,43 +226,105 @@
       Notification.requestPermission();
     }
 
-    const CACHE_KEY="qj.cached.notes.v1";
-    const cacheSet = arr => localStorage.setItem(CACHE_KEY,JSON.stringify(arr));
-    const cacheGet = () => {try{return JSON.parse(localStorage.getItem(CACHE_KEY)||"[]");}catch{return [];}};
+    // Lokal fallback-cache (utöver Firestore offline)
+    const CACHE_KEY="qj.cached.notes.v2";
+    const cacheSet=(arr)=>localStorage.setItem(CACHE_KEY,JSON.stringify(arr));
+    const cacheGet=()=>{try{return JSON.parse(localStorage.getItem(CACHE_KEY)||"[]");}catch{return [];}};
 
-    // Auth
+    // ---------------- Auth actions ----------------
     registerBtn.onclick = async () => {
       try{
         const cred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
-        await setDoc(doc(db,"users",cred.user.uid),{
-          email: cred.user.email || "",
-          createdAt: serverTimestamp()
-        },{merge:true});
-        alert("Konto skapat!");
+        await ensureUserDoc(cred.user);
       }catch(e){alert(e.message);}
     };
-
     loginBtn.onclick = async () => {
-      try{ await signInWithEmailAndPassword(auth, emailEl.value, passEl.value); }
-      catch(e){ alert(e.message); }
+      try{
+        await signInWithEmailAndPassword(auth, emailEl.value, passEl.value);
+      }catch(e){alert(e.message);}
     };
-
     googleBtn.onclick = async () => {
       try{
         const provider = new GoogleAuthProvider();
         const res = await signInWithPopup(auth, provider);
-        const u = res.user;
-        await setDoc(doc(db,"users",u.uid),{
-          displayName: u.displayName || "",
-          email: u.email || "",
-          photoURL: u.photoURL || "",
-          createdAt: serverTimestamp()
-        },{merge:true});
+        await ensureUserDoc(res.user);
       }catch(e){ alert(e.message); }
     };
-
     logoutBtn.onclick = () => signOut(auth);
 
+    // Skapa/uppdatera users/{uid}
+    async function ensureUserDoc(user){
+      const ref = doc(db, "users", user.uid);
+      const snap = await getDoc(ref);
+      const base = {
+        uid: user.uid,
+        email: user.email || null,
+        displayName: user.displayName || null,
+        photoURL: user.photoURL || null,
+        updatedAt: serverTimestamp(),
+      };
+      if (!snap.exists()){
+        await setDoc(ref, { ...base, createdAt: serverTimestamp(), tokens: [] });
+      } else {
+        await setDoc(ref, base, { merge: true });
+      }
+    }
+
+    // (valfritt) Web push-token → users/{uid}.tokens[]
+    async function setupPush(user){
+      if (!messaging) return;
+      try{
+        const vapidKey = "PASTE_YOUR_VAPID_PUBLIC_KEY_HERE"; // lägg din VAPID key här
+        if (vapidKey.includes("PASTE")) return;
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") return;
+
+        const token = await getToken(messaging, { vapidKey });
+        if (!token) return;
+
+        const ref = doc(db, "users", user.uid);
+        const snap = await getDoc(ref);
+        const tokens = (snap.exists() && Array.isArray(snap.data().tokens)) ? snap.data().tokens : [];
+        if (!tokens.includes(token)){
+          tokens.push(token);
+          await setDoc(ref, { tokens, updatedAt: serverTimestamp() }, { merge:true });
+        }
+
+        onMessage(messaging, (payload)=>{
+          const body = payload?.notification?.body || "Ny notis";
+          new Notification(payload?.notification?.title || "Queer Journal", {
+            body, icon: "android-chrome-192x192.png"
+          });
+        });
+      }catch(e){ console.warn("Push setup failed:", e); }
+    }
+
+    // ---------------- Live-lyssning på anteckningar (per user) ----------------
+    let unsubscribe = null;
+    let currentNotes = [];
+
+    function startNotesListener(uid){
+      if (unsubscribe) { try { unsubscribe(); } catch {} }
+      const q = query(
+        collection(db,"notes"),
+        where("uid","==",uid),
+        orderBy("date","desc")
+      );
+      unsubscribe = onSnapshot(q, { includeMetadataChanges:true }, (snap)=>{
+        const arr=[];
+        snap.forEach(d=>arr.push(d.data()));
+        currentNotes = arr.sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
+        cacheSet(currentNotes);
+        render();
+        rescheduleAll();
+      }, (err)=>{
+        console.warn("Snapshot error:", err);
+        currentNotes = cacheGet();
+        render();
+      });
+    }
+
+    // Visa/Hide beroende på auth
     onAuthStateChanged(auth, async (user)=>{
       if(user){
         authSection.style.display='none';
@@ -257,18 +335,20 @@
         userName.textContent = user.displayName || user.email || 'Inloggad';
         userPhoto.src = user.photoURL || 'android-chrome-192x192.png';
 
-        await loadNotes(user.uid);
-        rescheduleAll();
+        await ensureUserDoc(user);
+        startNotesListener(user.uid);
+        setupPush(user);
       }else{
         authSection.style.display='block';
         noteSection.style.display='none';
         notesSection.style.display='none';
         logoutBtn.style.display='none';
         userChip.style.display='none';
+        if (unsubscribe) { try { unsubscribe(); } catch {} }
       }
     });
 
-    // Spara anteckning
+    // ---------------- Spara anteckning ----------------
     saveBtn.onclick = async () => {
       const user = auth.currentUser;
       if(!user){alert("Logga in först.");return;}
@@ -294,9 +374,7 @@
 
       try{
         await addDoc(collection(db,"notes"), note);
-        clearForm();
-        await loadNotes(user.uid);
-        if(note.alarm) scheduleAlarm(note);
+        clearForm(); // listan uppdateras via onSnapshot
       }catch(e){alert(e.message);}
     };
 
@@ -306,29 +384,7 @@
       dateInput.value=today(); timeInput.value=now();
     }
 
-    // Hämta anteckningar (per användare)
-    let currentNotes = [];
-    async function loadNotes(uid){
-      notesList.innerHTML="Laddar…";
-      try{
-        const q=query(
-          collection(db,"notes"),
-          where("uid","==",uid),
-          orderBy("date","desc")
-        );
-        const snap=await getDocs(q);
-        const arr=[];
-        snap.forEach(doc=>arr.push(doc.data()));
-        currentNotes = arr.sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
-        cacheSet(currentNotes);
-        render();
-      }catch(e){
-        currentNotes = cacheGet(); // offline fallback
-        render();
-      }
-    }
-
-    // Vyer
+    // ---------------- Vyer & rendering ----------------
     let viewMode="list";
     const setActive=id=>{document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');};
     document.getElementById('listViewBtn').onclick=()=>{setActive('listViewBtn');viewMode='list';render();};
@@ -368,7 +424,7 @@
       });
     }
 
-    // Alarm
+    // ---------------- Alarm (klientside) ----------------
     function scheduleAlarm(note){
       if(!note.date||!note.time) return;
       const dt=new Date(note.date+"T"+note.time);
@@ -387,7 +443,7 @@
       }
     }
     function rescheduleAll(){
-      currentNotes.filter(n=>n.alarm).forEach(scheduleAlarm);
+      (currentNotes||[]).filter(n=>n.alarm).forEach(scheduleAlarm);
     }
 
     // Tema
