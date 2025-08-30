@@ -65,7 +65,6 @@
 </head>
 <body>
   <script>
-    /* Döda ev. gammalt PIN-lås från äldre versioner */
     try {
       ['qj.pin','qj.salt','qj.attempts'].forEach(k => localStorage.removeItem(k));
       const pinEl = document.getElementById('pinOverlay');
@@ -136,7 +135,7 @@
       <div id="notesList" class="empty">Inga anteckningar ännu.</div>
     </section>
 
-    <!-- ADMIN (syns bara för superadmin) -->
+    <!-- ADMIN -->
     <section id="adminMenu" class="card" style="display:none">
       <h2>Adminpanel</h2>
       <p class="muted">Endast för superadmin.</p>
@@ -164,24 +163,21 @@
 
   <!-- App-logik -->
   <script type="module">
-    // ---------------- Firebase imports ----------------
+    // Firebase imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
     import {
       getAuth, onAuthStateChanged,
       signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
       GoogleAuthProvider, signInWithPopup
     } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, where, orderBy,
-  serverTimestamp, onSnapshot, doc, getDoc, getDocs, setDoc,
-  enableIndexedDbPersistence
-} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
     import {
-      getMessaging, getToken, onMessage
-    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging.js";
-    
+      getFirestore, collection, addDoc, query, where, orderBy,
+      serverTimestamp, onSnapshot, doc, getDoc, getDocs, setDoc,
+      enableIndexedDbPersistence
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging.js";
 
-    // ---------------- Config ----------------
+    // Config
     const firebaseConfig = {
       apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
       authDomain: "queerjournal-1cc9d.firebaseapp.com",
@@ -192,19 +188,19 @@
       measurementId: "G-0T6JCFJCFZ"
     };
 
-    // ---------------- Init ----------------
+    // Init
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getFirestore(app);
 
-    // Firestore offline cache
-    enableIndexedDbPersistence(db).catch(()=>{/* redan aktiv eller ej stöd */});
+    // Offline cache
+    enableIndexedDbPersistence(db).catch(()=>{});
 
-    // (valfritt) Cloud Messaging
+    // (optional) Messaging
     let messaging = null;
     try { messaging = getMessaging(app); } catch {}
 
-    // ---------------- UI refs ----------------
+    // UI refs
     const emailEl = document.getElementById('emailInput');
     const passEl  = document.getElementById('passwordInput');
     const loginBtn = document.getElementById('loginBtn');
@@ -244,12 +240,11 @@
       Notification.requestPermission();
     }
 
-    // Lokal fallback-cache (utöver Firestore offline)
     const CACHE_KEY="qj.cached.notes.v2";
     const cacheSet=(arr)=>localStorage.setItem(CACHE_KEY,JSON.stringify(arr));
     const cacheGet=()=>{try{return JSON.parse(localStorage.getItem(CACHE_KEY)||"[]");}catch{return [];}};
 
-    // ---------------- Auth actions ----------------
+    // Auth
     registerBtn.onclick = async () => {
       try{
         const cred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
@@ -270,7 +265,6 @@
     };
     logoutBtn.onclick = () => signOut(auth);
 
-    // Skapa/uppdatera users/{uid}
     async function ensureUserDoc(user){
       const ref = doc(db, "users", user.uid);
       const snap = await getDoc(ref);
@@ -288,7 +282,6 @@
       }
     }
 
-    // (valfritt) Web push-token → users/{uid}.tokens[]
     async function setupPush(user){
       if (!messaging) return;
       try{
@@ -316,7 +309,7 @@
       }catch(e){ console.warn("Push setup failed:", e); }
     }
 
-    // ---------------- Admin-koll ----------------
+    // Admin-koll
     async function checkAdmin(user){
       try{
         const ref = doc(db, "admins", user.uid);
@@ -331,104 +324,92 @@
       adminOut.textContent = "";
       return false;
     }
-    // --- Adminhjälp ---
-// Hitta mål-uid via email genom users-kollektionen
-async function findUidByEmail(email) {
-  const q = query(collection(db, "users"), where("email", "==", email));
-  const s = await getDocs(q);
-  if (s.empty) return null;
-  // tar första träffen
-  return s.docs[0].id || s.docs[0].data().uid;
-}
 
-// Skicka varning (skapar ett dokument i /warnings)
-async function sendWarning(targetUid, reason) {
-  const admin = auth.currentUser;
-  await addDoc(collection(db, "warnings"), {
-    targetUid,
-    reason: reason || null,
-    by: admin?.uid || null,
-    at: serverTimestamp()
-  });
-}
-
-// Blockera användare (skriver/mergar i /blocks/{uid})
-async function blockUser(targetUid, reason) {
-  const admin = auth.currentUser;
-  await setDoc(doc(db, "blocks", targetUid), {
-    blocked: true,
-    reason: reason || null,
-    by: admin?.uid || null,
-    at: serverTimestamp()
-  }, { merge: true });
-}
-
-// Kolla om inloggad användare är blockerad – signa ut direkt i så fall
-async function checkBlocked(user) {
-  try {
-    const snap = await getDoc(doc(db, "blocks", user.uid));
-    if (snap.exists() && snap.data()?.blocked) {
-      alert("Ditt konto är blockerat. Kontakta support om du tror detta är fel.");
-      await signOut(auth);
-      return true;
+    // Adminhjälp
+    async function findUidByEmail(email) {
+      const qy = query(collection(db, "users"), where("email", "==", email));
+      const s = await getDocs(qy);
+      if (s.empty) return null;
+      return s.docs[0].id || s.docs[0].data().uid;
     }
-  } catch(e) { console.warn("Block check failed:", e); }
-  return false;
-}
+    async function sendWarning(targetUid, reason) {
+      const admin = auth.currentUser;
+      await addDoc(collection(db, "warnings"), {
+        targetUid,
+        reason: reason || null,
+        by: admin?.uid || null,
+        at: serverTimestamp()
+      });
+    }
+    async function blockUser(targetUid, reason) {
+      const admin = auth.currentUser;
+      await setDoc(doc(db, "blocks", targetUid), {
+        blocked: true,
+        reason: reason || null,
+        by: admin?.uid || null,
+        at: serverTimestamp()
+      }, { merge: true });
+    }
+    async function checkBlocked(user) {
+      try {
+        const snap = await getDoc(doc(db, "blocks", user.uid));
+        if (snap.exists() && snap.data()?.blocked) {
+          alert("Ditt konto är blockerat. Kontakta support om du tror detta är fel.");
+          await signOut(auth);
+          return true;
+        }
+      } catch(e) { console.warn("Block check failed:", e); }
+      return false;
+    }
 
-// Knyt knapparna (syns bara för superadmin redan)
-document.getElementById("btnWarn").onclick = async () => {
-  const emailOrUid = prompt("Vem vill du varna? Ange email eller uid:");
-  if (!emailOrUid) return;
-  const reason = prompt("Ange orsak (valfritt):") || "";
+    document.getElementById("btnWarn").onclick = async () => {
+      const emailOrUid = prompt("Vem vill du varna? Ange email eller uid:");
+      if (!emailOrUid) return;
+      const reason = prompt("Ange orsak (valfritt):") || "";
+      let targetUid = emailOrUid.trim();
+      if (targetUid.includes("@")) {
+        const found = await findUidByEmail(targetUid);
+        if (!found) return alert("Hittar ingen användare med den e-posten.");
+        targetUid = found;
+      }
+      try {
+        await sendWarning(targetUid, reason);
+        adminOut.textContent = `Varning skickad till ${targetUid}`;
+      } catch(e) {
+        alert("Kunde inte skicka varning: " + e.message);
+      }
+    };
 
-  let targetUid = emailOrUid.trim();
-  if (!targetUid.includes(":") && targetUid.includes("@")) {
-    const found = await findUidByEmail(targetUid);
-    if (!found) return alert("Hittar ingen användare med den e-posten.");
-    targetUid = found;
-  }
-  try {
-    await sendWarning(targetUid, reason);
-    adminOut.textContent = `Varning skickad till ${targetUid}`;
-  } catch(e) {
-    alert("Kunde inte skicka varning: " + e.message);
-  }
-};
+    document.getElementById("btnBlock").onclick = async () => {
+      const emailOrUid = prompt("Vilken användare ska blockeras? Ange email eller uid:");
+      if (!emailOrUid) return;
+      const reason = prompt("Orsak till blockering (valfritt):") || "";
+      let targetUid = emailOrUid.trim();
+      if (targetUid.includes("@")) {
+        const found = await findUidByEmail(targetUid);
+        if (!found) return alert("Hittar ingen användare med den e-posten.");
+        targetUid = found;
+      }
+      if (!confirm(`Blockera användare ${targetUid}?`)) return;
+      try {
+        await blockUser(targetUid, reason);
+        adminOut.textContent = `Användare blockerad: ${targetUid}`;
+      } catch(e) {
+        alert("Kunde inte blockera: " + e.message);
+      }
+    };
 
-document.getElementById("btnBlock").onclick = async () => {
-  const emailOrUid = prompt("Vilken användare ska blockeras? Ange email eller uid:");
-  if (!emailOrUid) return;
-  const reason = prompt("Orsak till blockering (valfritt):") || "";
-
-  let targetUid = emailOrUid.trim();
-  if (!targetUid.includes(":") && targetUid.includes("@")) {
-    const found = await findUidByEmail(targetUid);
-    if (!found) return alert("Hittar ingen användare med den e-posten.");
-    targetUid = found;
-  }
-  if (!confirm(`Blockera användare ${targetUid}?`)) return;
-
-  try {
-    await blockUser(targetUid, reason);
-    adminOut.textContent = `Användare blockerad: ${targetUid}`;
-  } catch(e) {
-    alert("Kunde inte blockera: " + e.message);
-  }
-};
-
-    // ---------------- Live-lyssning på anteckningar (per user) ----------------
+    // Live-lyssning
     let unsubscribe = null;
     let currentNotes = [];
-
     function startNotesListener(uid){
       if (unsubscribe) { try { unsubscribe(); } catch {} }
-      const q = query(
+      const qy = query(
         collection(db,"notes"),
         where("uid","==",uid),
         orderBy("date","desc")
       );
-      unsubscribe = onSnapshot(q, { includeMetadataChanges:true }, (snap)=>{
+      unsubscribe = onSnapshot(qy, { includeMetadataChanges:true }, (snap)=>{
         const arr=[];
         snap.forEach(d=>arr.push(d.data()));
         currentNotes = arr.sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
@@ -442,7 +423,7 @@ document.getElementById("btnBlock").onclick = async () => {
       });
     }
 
-    // Visa/Hide beroende på auth
+    // Auth state
     onAuthStateChanged(auth, async (user)=>{
       if(user){
         authSection.style.display='none';
@@ -453,13 +434,13 @@ document.getElementById("btnBlock").onclick = async () => {
         userName.textContent = user.displayName || user.email || 'Inloggad';
         userPhoto.src = user.photoURL || './android-chrome-192x192.png';
 
+        // Kolla block direkt
+        const isBlocked = await checkBlocked(user);
+        if (isBlocked) return;
+
         await ensureUserDoc(user);
         startNotesListener(user.uid);
         setupPush(user);
-// Direkt efter if(user) {
-const isBlocked = await checkBlocked(user);
-if (isBlocked) return; // avbryt uppstarten om användaren är spärrad
-        // Admin?
         checkAdmin(user);
       }else{
         authSection.style.display='block';
@@ -472,7 +453,7 @@ if (isBlocked) return; // avbryt uppstarten om användaren är spärrad
       }
     });
 
-    // ---------------- Spara anteckning ----------------
+    // Spara anteckning
     saveBtn.onclick = async () => {
       const user = auth.currentUser;
       if(!user){alert("Logga in först.");return;}
@@ -498,93 +479,24 @@ if (isBlocked) return; // avbryt uppstarten om användaren är spärrad
 
       try{
         await addDoc(collection(db,"notes"), note);
-        clearForm(); // live-lyssnaren uppdaterar listan
+        clearForm();
       }catch(e){alert(e.message);}
     };
 
     function clearForm(){
-      moodInput.value=""; tagsInput.value=""; contentInput.value="";
-      imageInput.value=""; alarmCheck.checked=false;
-      dateInput.value=today(); timeInput.value=now();
+      moodInput.value="";
+      tagsInput.value="";
+      contentInput.value="";
+      imageInput.value="";
+      alarmCheck.checked=false;
+      dateInput.value=today();
+      timeInput.value=now();
     }
 
-    // ---------------- Vyer & rendering ----------------
+    // Vyer & rendering
     let viewMode="list";
     const setActive=id=>{document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');};
     document.getElementById('listViewBtn').onclick=()=>{setActive('listViewBtn');viewMode='list';render();};
     document.getElementById('dayViewBtn').onclick =()=>{setActive('dayViewBtn');viewMode='day';render();};
     document.getElementById('weekViewBtn').onclick=()=>{setActive('weekViewBtn');viewMode='week';render();};
-    document.getElementById('alarmViewBtn').onclick=()=>{setActive('alarmViewBtn');viewMode='alarm';render();};
-
-    function render(){
-      if(!currentNotes.length){notesList.innerHTML='<div class="empty">Inga anteckningar.</div>';return;}
-      let list=[...currentNotes];
-
-      if(viewMode==='day'){
-        const iso=today();
-        list=list.filter(n=>n.date===iso);
-      }else if(viewMode==='week'){
-        const d=new Date(); const day=(d.getDay()||7);
-        const mon=new Date(d); mon.setDate(d.getDate()-day+1);
-        const sun=new Date(mon); sun.setDate(mon.getDate()+6);
-        const a=mon.toISOString().slice(0,10), b=sun.toISOString().slice(0,10);
-        list=list.filter(n=>n.date>=a && n.date<=b);
-      }else if(viewMode==='alarm'){
-        list=list.filter(n=>n.alarm);
-      }
-
-      notesList.innerHTML='';
-      list.forEach(n=>{
-        const div=document.createElement('div'); div.className='entry';
-        const title=(n.mood?`<span class="emoji">${n.mood.split(' ')[0]}</span>`:'') + (n.content?.split('\n')[0]?.slice(0,40)||'Anteckning');
-        div.innerHTML=`
-          <strong>${title}</strong><br>
-          <span class="muted">${n.date} ${n.time||''} ${n.alarm?'⏰':''}</span>
-          <p>${(n.content||'').replace(/\n/g,'<br>')}</p>
-          ${(n.tags||[]).map(t=>`<span class="badge">#${t}</span>`).join(' ')}
-          ${n.image?`<img class="thumb" src="${n.image}" alt="bild">`:''}
-        `;
-        notesList.appendChild(div);
-      });
-    }
-
-    // ---------------- Alarm (klientside) ----------------
-    function scheduleAlarm(note){
-      if(!note.date||!note.time) return;
-      const dt=new Date(note.date+"T"+note.time);
-      const diff=dt.getTime()-Date.now();
-      if(diff<=0) return;
-      setTimeout(()=>triggerAlarm(note), diff);
-    }
-    function triggerAlarm(note){
-      const audio=document.getElementById('alarmSound');
-      audio?.play().catch(()=>{});
-      const body=note.content||'Dags att kolla din anteckning!';
-      if("Notification" in window && Notification.permission==="granted"){
-        new Notification("⏰ Alarm!", { body, icon:"./android-chrome-192x192.png" });
-      }else{
-        alert("⏰ "+body);
-      }
-    }
-    function rescheduleAll(){
-      (currentNotes || []).filter(n => n.alarm).forEach(scheduleAlarm);
-    }
-
-    // Tema
-    document.getElementById('darkToggle').onclick = () =>
-      document.body.classList.toggle('dark');
-
-  </script>
-
-  <!-- Service Worker -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      // relativt från /queerjournal/index.html (GitHub Pages)
-      navigator.serviceWorker
-        .register('./sw.js', { scope: './' })
-        .then(reg => console.log('SW OK:', reg.scope))
-        .catch(err => console.warn('SW fail:', err));
-    }
-  </script>
-</body>
-</html>
+    document.getElementById('alarmViewBtn').onclick=()=>{setActive('alarmViewBtn');viewMode='alarm';render()
