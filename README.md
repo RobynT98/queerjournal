@@ -32,7 +32,12 @@ Appen fungerar som **PWA (Progressive Web App)** – du kan installera den på m
 Du kan använda appen direkt via GitHub Pages:  
 [https://robynt98.github.io/queerjournal/](https://robynt98.github.io/queerjournal/)
 ---
+Vill du köra lokalt?  
 
+```bash
+git clone https://github.com/RobynT98/queerjournal.git
+cd queerjournal
+---
 ## 📜 Licens & bidrag
 
 Detta projekt är släppt under [MIT License](LICENSE) för den öppna versionen.  
@@ -46,9 +51,3 @@ Det innebär att projektägaren **Conri Turesson** har rätt att i framtiden:
 
 Ditt bidrag till den öppna versionen kommer alltid att förbli MIT-licensierat.
 
-Vill du köra lokalt?  
-
-```bash
-git clone https://github.com/RobynT98/queerjournal.git
-cd queerjournal
----
