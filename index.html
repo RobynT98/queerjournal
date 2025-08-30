@@ -69,7 +69,13 @@ header .actions{display:flex;align-items:center;gap:.5rem}
 #logoutTop{background:#fff;color:#222}     /* vit pill = tydlig på gradient */
 #darkToggle{background:rgba(255,255,255,.2);color:#fff}
 .user-chip img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.6)}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  }
   </style>
+
 </head>
 <body>
   <script>
@@ -106,7 +112,6 @@ header .actions{display:flex;align-items:center;gap:.5rem}
         <button id="googleBtn" class="pill gbtn">
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt=""> Logga in med Google
         </button>
-        <button id="logoutBtn" class="pill" style="display:none">Logga ut</button>
       </div>
     </section>
 
@@ -478,16 +483,46 @@ resetBtn.onclick = async () => {
     }
 
     // Auth state
-    onAuthStateChanged(auth, async (user)=>{
-      if(user){
-        authSection.style.display='none';
-        noteSection.style.display='block';
-        notesSection.style.display='block';
-        logoutBtn.style.display='';
-        userChip.style.display='';
-        userName.textContent = user.displayName || user.email || 'Inloggad';
-        userPhoto.src = user.photoURL || './android-chrome-192x192.png';
+    onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    // visa appen
+    authSection.style.display = 'none';
+    noteSection.style.display = 'block';
+    notesSection.style.display = 'block';
+    logoutBtn.style.display = '';
+    userChip.style.display = '';
+    userName.textContent = user.displayName || user.email || 'Inloggad';
+    userPhoto.src = user.photoURL || './android-chrome-192x192.png';
 
+    // visa dörr-logout, dölj "glömt lösen"
+    logoutTop.style.display = '';
+    resetBtn.style.display = 'none';
+
+    // din övriga "inloggad"-logik
+    const isBlocked = await checkBlocked(user);
+    if (isBlocked) return;
+    await ensureUserDoc(user);
+    startNotesListener(user.uid);
+    setupPush(user);
+    checkAdmin(user);
+
+  } else {
+    // visa login, dölj resten
+    authSection.style.display = 'block';
+    noteSection.style.display = 'none';
+    notesSection.style.display = 'none';
+    logoutBtn.style.display = 'none';
+    userChip.style.display = 'none';
+    adminMenu.style.display = 'none';
+
+    // dölj dörr-logout, visa "glömt lösen"
+    logoutTop.style.display = 'none';
+    resetBtn.style.display = '';
+
+    if (unsubscribe) { try { unsubscribe(); } catch {} }
+  }
+});
+    
         // Kolla block direkt
         const isBlocked = await checkBlocked(user);
         if (isBlocked) return;
