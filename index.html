@@ -453,13 +453,14 @@
 
   <!-- Service worker -->
   <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js", { scope: "./" })
-          .then(reg => console.log("Service Worker:", reg.scope))
-          .catch(err => console.warn("SW error:", err));
-      });
-    }
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/queerjournal/sw.js", { scope: "/queerjournal/" })
+        .then(reg => console.log("Service Worker:", reg.scope))
+        .catch(err => console.warn("SW error:", err));
+    });
+  }
   </script>
 </body>
 </html>
