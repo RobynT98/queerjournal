@@ -29,7 +29,8 @@
     body.dark{background:var(--bg-dark);color:var(--text-dark)}
     header{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1rem;background:linear-gradient(90deg,var(--brand1),var(--brand2));color:#fff}
     header h1{margin:0;font-size:1.2rem}
-    .toggle-dark{cursor:pointer;background:rgba(255,255,255,.2);border:0;border-radius:50%;width:36px;height:36px;color:#fff}
+    .actions{display:flex;align-items:center;gap:.5rem}
+    .toggle-dark{cursor:pointer;background:rgba(255,255,255,.2);border:0;border-radius:50%;min-width:36px;height:36px;color:#fff;padding:0 10px}
     .user-chip{display:flex;align-items:center;gap:.5rem}
     .user-chip img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.6)}
     .user-chip small{opacity:.9}
@@ -41,14 +42,12 @@
     label{display:inline-flex;align-items:center;gap:.4rem;margin:.25rem 0}
     input,select,textarea,button{font:inherit}
     input,select,textarea{width:100%;padding:.55rem .7rem;border-radius:.7rem;border:1px solid var(--line);background:inherit;color:inherit}
-    body.dark input,body.dark select,body.dark textarea{border-color:var(--line-dark)}
     textarea{min-height:120px}
     .pill{border-radius:999px;border:0;background:linear-gradient(90deg,var(--btn1),var(--btn2));color:#fff;padding:.5rem 1rem;cursor:pointer}
     .pill.secondary{background:#ccc;color:#222}
     .gbtn{background:#fff;color:#222;border:1px solid var(--line);display:inline-flex;align-items:center;gap:.5rem}
     .gbtn img{width:18px;height:18px}
     .badge{display:inline-block;padding:.15rem .5rem;border-radius:999px;border:1px solid var(--line);font-size:.8rem;margin-right:.25rem}
-    body.dark .badge{border-color:var(--line-dark)}
     .thumb{max-width:120px;border-radius:.5rem;display:block;margin-top:.5rem}
     .muted{color:var(--muted)}
     footer{position:fixed;bottom:0;left:0;right:0;background:#eee;border-top:1px solid var(--line)}
@@ -61,47 +60,32 @@
     .emoji{font-size:1.15rem;margin-right:.35rem}
     .empty{padding:.6rem 0}
     .spacer{height:72px}
-    header{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1rem;background:linear-gradient(90deg,var(--brand1),var(--brand2));color:#fff}
-header h1{margin:0;font-size:1.2rem}
-header .actions{display:flex;align-items:center;gap:.5rem}
-
-.toggle-dark{cursor:pointer;border:0;border-radius:999px;height:36px;min-width:36px;padding:0 .8rem}
-#logoutTop{background:#fff;color:#222}     /* vit pill = tydlig på gradient */
-#darkToggle{background:rgba(255,255,255,.2);color:#fff}
-.user-chip img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.6)}
-.actions {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  }
   </style>
-
 </head>
 <body>
   <script>
+    // Städa ev. gammalt PIN-lås från äldre versioner
     try {
       ['qj.pin','qj.salt','qj.attempts'].forEach(k => localStorage.removeItem(k));
-      const pinEl = document.getElementById('pinOverlay');
-      if (pinEl) pinEl.style.display = 'none';
     } catch {}
   </script>
- <header>
-  <h1>🌈 Queer Journal</h1>
 
-  <div class="actions">
-    <div class="user-chip" id="userChip" style="display:none">
-      <img id="userPhoto" alt="">
-      <small id="userName"></small>
+  <header>
+    <h1>🌈 Queer Journal</h1>
+    <div class="actions">
+      <div class="user-chip" id="userChip" style="display:none">
+        <img id="userPhoto" alt="">
+        <small id="userName"></small>
+      </div>
+      <button id="logoutTop" class="toggle-dark" title="Logga ut" style="display:none">🚪</button>
+      <button id="darkToggle" class="toggle-dark" title="Byt tema">🌓</button>
     </div>
-    <button id="logoutTop" class="toggle-dark" title="Logga ut" style="display:none">🚪 Logga ut</button>
-    <button id="darkToggle" class="toggle-dark" title="Byt tema">🌓</button>
-  </div>
- </header> 
+  </header>
+
   <main>
     <!-- AUTH -->
     <section id="authSection" class="card">
       <h2>Logga in / Skapa konto</h2>
-      <p class="muted">Dina anteckningar sparas privat i molnet och synkas mellan enheter.</p>
       <input id="emailInput" type="email" placeholder="E-post" />
       <input id="passwordInput" type="password" placeholder="Lösenord" />
       <div class="row">
@@ -109,8 +93,9 @@ header .actions{display:flex;align-items:center;gap:.5rem}
         <button id="loginBtn" class="pill">Logga in</button>
         <button id="registerBtn" class="pill secondary">Skapa konto</button>
         <button id="googleBtn" class="pill gbtn">
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt=""> Logga in med Google
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt=""> Google
         </button>
+        <button id="logoutBtn" class="pill" style="display:none">Logga ut</button>
       </div>
     </section>
 
@@ -132,7 +117,7 @@ header .actions{display:flex;align-items:center;gap:.5rem}
             <option>🌈 Proud</option>
           </select>
         </label>
-        <label style="flex:1">Taggar <input id="tagsInput" type="text" placeholder="komma-separerat: skola, katt" /></label>
+        <label style="flex:1">Taggar <input id="tagsInput" type="text" placeholder="t.ex. skola, katt" /></label>
       </div>
       <label>Innehåll
         <textarea id="contentInput" placeholder="t.ex. 1/2 påse blötmat"></textarea>
@@ -154,7 +139,6 @@ header .actions{display:flex;align-items:center;gap:.5rem}
     <!-- ADMIN -->
     <section id="adminMenu" class="card" style="display:none">
       <h2>Adminpanel</h2>
-      <p class="muted">Endast för superadmin.</p>
       <div class="row">
         <button id="btnWarn" class="pill secondary">⚠️ Skicka varning</button>
         <button id="btnBlock" class="pill">🚫 Blockera användare</button>
@@ -178,126 +162,130 @@ header .actions{display:flex;align-items:center;gap:.5rem}
   <audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
   <!-- App-logik -->
-    <script type="module">
-// ---------------- Firebase imports ----------------
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-import { getAuth, onAuthStateChanged,
-  signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
-  GoogleAuthProvider, signInWithPopup,sendPasswordResetEmail
-} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-import {
-  getFirestore, collection, addDoc, query, where, orderBy,
-  serverTimestamp, onSnapshot, doc, getDoc, getDocs, setDoc,
-  enableIndexedDbPersistence
-} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import {
-  getMessaging, getToken, onMessage
-} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging.js";
+  <script type="module">
+    // -------- Firebase imports --------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import {
+      getAuth, onAuthStateChanged,
+      signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
+      GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, query, where, orderBy,
+      serverTimestamp, onSnapshot, doc, getDoc, getDocs, setDoc,
+      enableIndexedDbPersistence
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging.js";
 
-console.log("QJournal app loaded v9"); // liten sanity-check i konsolen
-     // ---------------- Config ----------------
-const firebaseConfig = {
-  apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
-  authDomain: "queerjournal-1cc9d.firebaseapp.com",
-  projectId: "queerjournal-1cc9d",
-  storageBucket: "queerjournal-1cc9d.firebasestorage.app",
-  messagingSenderId: "53325952423",
-  appId: "1:53325952423:web:24837ecc436332e436b282",
-  measurementId: "G-0T6JCFJCFZ"
-}; 
+    // -------- Config --------
+    const firebaseConfig = {
+      apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
+      authDomain: "queerjournal-1cc9d.firebaseapp.com",
+      projectId: "queerjournal-1cc9d",
+      storageBucket: "queerjournal-1cc9d.firebasestorage.app",
+      messagingSenderId: "53325952423",
+      appId: "1:53325952423:web:24837ecc436332e436b282",
+      measurementId: "G-0T6JCFJCFZ"
+    };
 
-    // Init
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+    // -------- Init --------
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const db   = getFirestore(app);
 
-    // Offline cache
-    enableIndexedDbPersistence(db).catch(()=>{});
+    // Firestore offline cache
+    enableIndexedDbPersistence(db).catch(()=>{ /* redan aktiv eller ej stöd */ });
 
-    // (optional) Messaging
+    // (valfritt) Cloud Messaging
     let messaging = null;
     try { messaging = getMessaging(app); } catch {}
 
-    // UI refs
-const emailEl = document.getElementById('emailInput');
-const passEl  = document.getElementById('passwordInput');
-const loginBtn = document.getElementById('loginBtn');
-const registerBtn = document.getElementById('registerBtn');
-const googleBtn = document.getElementById('googleBtn');
-const logoutBtn = document.getElementById('logoutBtn');   // (i auth-kortet)
+    // -------- UI refs --------
+    const emailEl = document.getElementById('emailInput');
+    const passEl  = document.getElementById('passwordInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+    const googleBtn = document.getElementById('googleBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const logoutTop = document.getElementById('logoutTop');
+    const resetBtn  = document.getElementById('resetBtn');
 
-const authSection  = document.getElementById('authSection');
-const noteSection  = document.getElementById('noteSection');
-const notesSection = document.getElementById('notesSection');
-const notesList    = document.getElementById('notesList');
+    const authSection  = document.getElementById('authSection');
+    const noteSection  = document.getElementById('noteSection');
+    const notesSection = document.getElementById('notesSection');
+    const notesList    = document.getElementById('notesList');
 
-const userChip  = document.getElementById('userChip');
-const userName  = document.getElementById('userName');
-const userPhoto = document.getElementById('userPhoto');
+    const userChip  = document.getElementById('userChip');
+    const userName  = document.getElementById('userName');
+    const userPhoto = document.getElementById('userPhoto');
 
-const adminMenu = document.getElementById('adminMenu');
-const adminOut  = document.getElementById('adminOut');
+    const adminMenu = document.getElementById('adminMenu');
+    const adminOut  = document.getElementById('adminOut');
 
-const dateInput=document.getElementById('dateInput');
-const timeInput=document.getElementById('timeInput');
-const moodInput=document.getElementById('moodInput');
-const tagsInput=document.getElementById('tagsInput');
-const contentInput=document.getElementById('contentInput');
-const imageInput=document.getElementById('imageInput');
-const alarmCheck=document.getElementById('alarmCheck');
+    const dateInput=document.getElementById('dateInput');
+    const timeInput=document.getElementById('timeInput');
+    const moodInput=document.getElementById('moodInput');
+    const tagsInput=document.getElementById('tagsInput');
+    const contentInput=document.getElementById('contentInput');
+    const imageInput=document.getElementById('imageInput');
+    const alarmCheck=document.getElementById('alarmCheck');
 
-const saveBtn=document.getElementById('saveBtn');
-const clearBtn=document.getElementById('clearBtn');
+    const saveBtn=document.getElementById('saveBtn');
+    const clearBtn=document.getElementById('clearBtn');
 
-// 🔽 NYA topp-knappar
-const logoutTop = document.getElementById('logoutTop');
-const resetBtn  = document.getElementById('resetBtn');
+    // -------- Helpers --------
+    const today=()=> new Date().toISOString().slice(0,10);
+    const now=()=> new Date().toTimeString().slice(0,5);
+    dateInput.value=today(); timeInput.value=now();
 
-// ========= Handlers =========
-registerBtn.onclick = async () => {
-  try {
-    const cred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
-    await ensureUserDoc(cred.user);
-  } catch (e) {
-    alert(e.message);
-  }
-};
+    if ("Notification" in window && Notification.permission!=="granted"){
+      Notification.requestPermission();
+    }
 
-loginBtn.onclick = async () => {
-  try {
-    await signInWithEmailAndPassword(auth, emailEl.value, passEl.value);
-  } catch (e) {
-    alert(e.message);
-  }
-};
+    const CACHE_KEY="qj.cached.notes.v2";
+    const cacheSet=(arr)=>localStorage.setItem(CACHE_KEY,JSON.stringify(arr));
+    const cacheGet=()=>{try{return JSON.parse(localStorage.getItem(CACHE_KEY)||"[]");}catch{return [];}};
 
-googleBtn.onclick = async () => {
-  try {
-    const provider = new GoogleAuthProvider();
-    const res = await signInWithPopup(auth, provider);
-    await ensureUserDoc(res.user);
-  } catch (e) {
-    alert(e.message);
-  }
-};
+    // -------- Auth handlers --------
+    registerBtn.onclick = async () => {
+      try{
+        const cred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
+        await ensureUserDoc(cred.user);
+      }catch(e){ alert(e.message); }
+    };
 
-// Logga ut (båda knapparna)
-logoutBtn.onclick  = () => signOut(auth);
-logoutTop.onclick  = () => signOut(auth);
+    loginBtn.onclick = async () => {
+      try{
+        await signInWithEmailAndPassword(auth, emailEl.value, passEl.value);
+      }catch(e){ alert(e.message); }
+    };
 
-// Glömt lösenord
-resetBtn.onclick = async () => {
-  const email = (emailEl.value || '').trim();
-  if (!email) {
-    return alert("Skriv in din e-post först, så skickar jag en återställningslänk.");
-  }
-  try {
-    await sendPasswordResetEmail(auth, email);
-    alert("Återställningslänk skickad! Kolla din e-post.");
-  } catch (e) {
-    alert("Kunde inte skicka återställningslänk: " + e.message);
-  }
-};
+    googleBtn.onclick = async () => {
+      try{
+        const provider = new GoogleAuthProvider();
+        const res = await signInWithPopup(auth, provider);
+        await ensureUserDoc(res.user);
+      }catch(e){ alert(e.message); }
+    };
+
+    // Logga ut (båda knapparna)
+    const doLogout = () => signOut(auth);
+    logoutBtn.onclick  = doLogout;
+    logoutTop.onclick  = doLogout;
+
+    // Glömt lösenord
+    resetBtn.onclick = async () => {
+      const email = (emailEl.value || '').trim();
+      if (!email) return alert("Skriv in din e-post först, så skickar jag en återställningslänk.");
+      try {
+        await sendPasswordResetEmail(auth, email);
+        alert("Återställningslänk skickad! Kolla din e-post.");
+      } catch (e) {
+        alert("Kunde inte skicka återställningslänk: " + e.message);
+      }
+    };
+
+    // -------- User doc --------
     async function ensureUserDoc(user){
       const ref = doc(db, "users", user.uid);
       const snap = await getDoc(ref);
@@ -315,6 +303,7 @@ resetBtn.onclick = async () => {
       }
     }
 
+    // -------- (valfritt) Push --------
     async function setupPush(user){
       if (!messaging) return;
       try{
@@ -342,7 +331,7 @@ resetBtn.onclick = async () => {
       }catch(e){ console.warn("Push setup failed:", e); }
     }
 
-    // Admin-koll
+    // -------- Admin + block --------
     async function checkAdmin(user){
       try{
         const ref = doc(db, "admins", user.uid);
@@ -358,7 +347,6 @@ resetBtn.onclick = async () => {
       return false;
     }
 
-    // Adminhjälp
     async function findUidByEmail(email) {
       const qy = query(collection(db, "users"), where("email", "==", email));
       const s = await getDocs(qy);
@@ -399,6 +387,7 @@ resetBtn.onclick = async () => {
       const emailOrUid = prompt("Vem vill du varna? Ange email eller uid:");
       if (!emailOrUid) return;
       const reason = prompt("Ange orsak (valfritt):") || "";
+
       let targetUid = emailOrUid.trim();
       if (targetUid.includes("@")) {
         const found = await findUidByEmail(targetUid);
@@ -417,6 +406,7 @@ resetBtn.onclick = async () => {
       const emailOrUid = prompt("Vilken användare ska blockeras? Ange email eller uid:");
       if (!emailOrUid) return;
       const reason = prompt("Orsak till blockering (valfritt):") || "";
+
       let targetUid = emailOrUid.trim();
       if (targetUid.includes("@")) {
         const found = await findUidByEmail(targetUid);
@@ -424,6 +414,7 @@ resetBtn.onclick = async () => {
         targetUid = found;
       }
       if (!confirm(`Blockera användare ${targetUid}?`)) return;
+
       try {
         await blockUser(targetUid, reason);
         adminOut.textContent = `Användare blockerad: ${targetUid}`;
@@ -432,9 +423,10 @@ resetBtn.onclick = async () => {
       }
     };
 
-    // Live-lyssning
+    // -------- Live-lyssning notes --------
     let unsubscribe = null;
     let currentNotes = [];
+
     function startNotesListener(uid){
       if (unsubscribe) { try { unsubscribe(); } catch {} }
       const qy = query(
@@ -456,48 +448,20 @@ resetBtn.onclick = async () => {
       });
     }
 
-    // Auth state
-    onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    // visa appen
-    authSection.style.display = 'none';
-    noteSection.style.display = 'block';
-    notesSection.style.display = 'block';
-    logoutBtn.style.display = '';
-    userChip.style.display = '';
-    userName.textContent = user.displayName || user.email || 'Inloggad';
-    userPhoto.src = user.photoURL || './android-chrome-192x192.png';
+    // --   onAuthStateChanged(auth, async (user)=>{
+      if(user){
+        // visa app
+        authSection.style.display='none';
+        noteSection.style.display='block';
+        notesSection.style.display='block';
+        logoutBtn.style.display='';
+        logoutTop.style.display='';
+        resetBtn.style.display='none';
+        userChip.style.display='';
+        userName.textContent = user.displayName || user.email || 'Inloggad';
+        userPhoto.src = user.photoURL || './android-chrome-192x192.png';
 
-    // visa dörr-logout, dölj "glömt lösen"
-    logoutTop.style.display = '';
-    resetBtn.style.display = 'none';
-
-    // din övriga "inloggad"-logik
-    const isBlocked = await checkBlocked(user);
-    if (isBlocked) return;
-    await ensureUserDoc(user);
-    startNotesListener(user.uid);
-    setupPush(user);
-    checkAdmin(user);
-
-  } else {
-    // visa login, dölj resten
-    authSection.style.display = 'block';
-    noteSection.style.display = 'none';
-    notesSection.style.display = 'none';
-    logoutBtn.style.display = 'none';
-    userChip.style.display = 'none';
-    adminMenu.style.display = 'none';
-
-    // dölj dörr-logout, visa "glömt lösen"
-    logoutTop.style.display = 'none';
-    resetBtn.style.display = '';
-
-    if (unsubscribe) { try { unsubscribe(); } catch {} }
-  }
-});
-    
-        // Kolla block direkt
+        // spärrkoll
         const isBlocked = await checkBlocked(user);
         if (isBlocked) return;
 
@@ -506,17 +470,20 @@ resetBtn.onclick = async () => {
         setupPush(user);
         checkAdmin(user);
       }else{
+        // visa inloggning
         authSection.style.display='block';
         noteSection.style.display='none';
         notesSection.style.display='none';
         logoutBtn.style.display='none';
+        logoutTop.style.display='none';
+        resetBtn.style.display='';
         userChip.style.display='none';
         adminMenu.style.display='none';
         if (unsubscribe) { try { unsubscribe(); } catch {} }
       }
     });
 
-    // Spara anteckning
+    // -------- Spara anteckning --------
     saveBtn.onclick = async () => {
       const user = auth.currentUser;
       if(!user){alert("Logga in först.");return;}
@@ -556,85 +523,72 @@ resetBtn.onclick = async () => {
       timeInput.value=now();
     }
 
-    // Vyer & rendering
+    // -------- Vyer & rendering --------
     let viewMode="list";
     const setActive=id=>{document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');};
     document.getElementById('listViewBtn').onclick=()=>{setActive('listViewBtn');viewMode='list';render();};
     document.getElementById('dayViewBtn').onclick =()=>{setActive('dayViewBtn');viewMode='day';render();};
     document.getElementById('weekViewBtn').onclick=()=>{setActive('weekViewBtn');viewMode='week';render();};
-    document.getElementById('alarmViewBtn').onclick = () => {
-      setActive('alarmViewBtn');
-      viewMode = 'alarm';
-      render();
-    };
+    document.getElementById('alarmViewBtn').onclick=()=>{setActive('alarmViewBtn');viewMode='alarm';render();};
 
-    function render() {
-      if (!currentNotes.length) {
-        notesList.innerHTML = '<div class="empty">Inga anteckningar.</div>';
-        return;
+    function render(){
+      if(!currentNotes.length){notesList.innerHTML='<div class="empty">Inga anteckningar.</div>';return;}
+      let list=[...currentNotes];
+
+      if(viewMode==='day'){
+        const iso=today();
+        list=list.filter(n=>n.date===iso);
+      }else if(viewMode==='week'){
+        const d=new Date(); const day=(d.getDay()||7);
+        const mon=new Date(d); mon.setDate(d.getDate()-day+1);
+        const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+        const a=mon.toISOString().slice(0,10), b=sun.toISOString().slice(0,10);
+        list=list.filter(n=>n.date>=a && n.date<=b);
+      }else if(viewMode==='alarm'){
+        list=list.filter(n=>n.alarm);
       }
 
-      let list = [...currentNotes];
-
-      if (viewMode === 'day') {
-        const iso = today();
-        list = list.filter(n => n.date === iso);
-      } else if (viewMode === 'week') {
-        const d = new Date();
-        const day = (d.getDay() || 7);
-        const mon = new Date(d); mon.setDate(d.getDate() - day + 1);
-        const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-        const a = mon.toISOString().slice(0,10), b = sun.toISOString().slice(0,10);
-        list = list.filter(n => n.date >= a && n.date <= b);
-      } else if (viewMode === 'alarm') {
-        list = list.filter(n => n.alarm);
-      }
-
-      notesList.innerHTML = '';
-      list.forEach(n => {
-        const div = document.createElement('div');
-        div.className = 'entry';
-        const title =
-          (n.mood ? `<span class="emoji">${n.mood.split(' ')[0]}</span>` : '') +
-          (n.content?.split('\n')[0]?.slice(0,40) || 'Anteckning');
-        div.innerHTML = `
+      notesList.innerHTML='';
+      list.forEach(n=>{
+        const div=document.createElement('div'); div.className='entry';
+        const title=(n.mood?`<span class="emoji">${n.mood.split(' ')[0]}</span>`:'') + (n.content?.split('\n')[0]?.slice(0,40)||'Anteckning');
+        div.innerHTML=`
           <strong>${title}</strong><br>
-          <span class="muted">${n.date} ${n.time || ''} ${n.alarm ? '⏰' : ''}</span>
-          <p>${(n.content || '').replace(/\n/g,'<br>')}</p>
-          ${(n.tags || []).map(t => `<span class="badge">#${t}</span>`).join(' ')}
-          ${n.image ? `<img class="thumb" src="${n.image}" alt="bild">` : ''}
+          <span class="muted">${n.date} ${n.time||''} ${n.alarm?'⏰':''}</span>
+          <p>${(n.content||'').replace(/\n/g,'<br>')}</p>
+          ${(n.tags||[]).map(t=>`<span class="badge">#${t}</span>`).join(' ')}
+          ${n.image?`<img class="thumb" src="${n.image}" alt="bild">`:''}
         `;
         notesList.appendChild(div);
       });
     }
 
-    // Alarm (klientside)
-    function scheduleAlarm(note) {
-      if (!note.date || !note.time) return;
-      const dt = new Date(note.date + 'T' + note.time);
-      const diff = dt.getTime() - Date.now();
-      if (diff <= 0) return;
-      setTimeout(() => triggerAlarm(note), diff);
+    // -------- Alarm --------
+    function scheduleAlarm(note){
+      if(!note.date||!note.time) return;
+      const dt=new Date(note.date+"T"+note.time);
+      const diff=dt.getTime()-Date.now();
+      if(diff<=0) return;
+      setTimeout(()=>triggerAlarm(note), diff);
     }
-    function triggerAlarm(note) {
-      const audio = document.getElementById('alarmSound');
+    function triggerAlarm(note){
+      const audio=document.getElementById('alarmSound');
       audio?.play().catch(()=>{});
-      const body = note.content || 'Dags att kolla din anteckning!';
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('⏰ Alarm!', { body, icon: './android-chrome-192x192.png' });
-      } else {
-        alert('⏰ ' + body);
+      const body=note.content||'Dags att kolla din anteckning!';
+      if("Notification" in window && Notification.permission==="granted"){
+        new Notification("⏰ Alarm!", { body, icon:"./android-chrome-192x192.png" });
+      }else{
+        alert("⏰ "+body);
       }
     }
-    function rescheduleAll() {
-      (currentNotes || []).filter(n => n.alarm).forEach(scheduleAlarm);
+    function rescheduleAll(){
+      (currentNotes||[]).filter(n=>n.alarm).forEach(scheduleAlarm);
     }
 
-    // Tema
-    document.getElementById('darkToggle').onclick = () =>
-      document.body.classList.toggle('dark');
+    // -------- Tema --------
+    document.getElementById('darkToggle').onclick=()=> document.body.classList.toggle('dark');
 
-    // Service Worker (PWA)
+    // -------- Service worker --------
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js', { scope: './' })
         .catch(err => console.warn('SW fail:', err));
