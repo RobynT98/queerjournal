@@ -1,7 +1,7 @@
 // sw.js – Queer Journal (robust GH Pages + lokal)
 /* v31 */
 const CACHE_PREFIX = 'qj-cache-';
-const VERSION = 'v32-2025-08-30';
+const VERSION = 'v33-2025-08-30';
 const CACHE = `${CACHE_PREFIX}${VERSION}`;
 
 // Räkna ut BASE-path dynamiskt (t.ex. "/queerjournal/" på GH Pages eller "/" lokalt)
