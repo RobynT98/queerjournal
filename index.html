@@ -58,6 +58,85 @@
     .emoji{font-size:1.15rem;margin-right:.35rem}
     .empty{padding:.6rem 0}
     .spacer{height:72px}
+    /* Magisk bakgrundsfärg */
+body {
+  background: linear-gradient(45deg, #4e76d5, #d16d8c); /* Blå till lila */
+  color: #fff;
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Header - gör den lite mer mystisk */
+header {
+  background-color: #3e3e3e;
+  padding: 20px;
+  text-align: center;
+}
+
+header h1 {
+  font-size: 2em;
+  color: #fff;
+}
+
+/* Footer design */
+footer {
+  background-color: #333;
+  color: #fff;
+  padding: 10px 0;
+  text-align: center;
+}
+
+footer a {
+  color: #4ecdc4;
+  text-decoration: none;
+  margin: 0 15px;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+/* För att göra länkar och knappar mer synliga */
+button {
+  background-color: #4ecdc4;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+button:hover {
+  background-color: #5bc8a2;
+}
+
+/* Större och mer tillgängliga knappar för NPF-vänlighet */
+input[type="text"],
+input[type="password"],
+textarea {
+  font-size: 18px;
+  padding: 10px;
+  margin: 10px 0;
+  width: 100%;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+/* För mer mystiska effekter */
+a {
+  text-decoration: none;
+  color: #d6b5ff;
+}
+
+a:hover {
+  color: #f9f4ff;
+}
+
+/* Anpassad textstorlek för läsbarhet */
+p, label {
+  font-size: 18px;
+}
+
   </style>
 </head>
 <body>
@@ -107,10 +186,10 @@
         <label style="flex:1">Känsla
           <select id="moodInput">
             <option value="">--</option>
-            <option>😊 Lugn</option>
+            <option>😊 Glad</option>
             <option>🔥 Taggad</option>
             <option>😢 Ledsen</option>
-            <option>🌈 Proud</option>
+            <option>🌈 Stolt</option>
           </select>
         </label>
         <label style="flex:1">Taggar <input id="tagsInput" type="text" placeholder="t.ex. skola, katt" /></label>
