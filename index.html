@@ -456,9 +456,9 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("/queerjournal/sw.js", { scope: "/queerjournal/" })
-        .then(reg => console.log("Service Worker:", reg.scope))
-        .catch(err => console.warn("SW error:", err));
+        .register("./sw.js", { scope: "./" })
+        .then(reg => console.log("✅ Service Worker registrerad med scope:", reg.scope))
+        .catch(err => console.warn("⚠️ SW error:", err));
     });
   }
   </script>
