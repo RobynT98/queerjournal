@@ -56,11 +56,18 @@
     <!-- NY ANTECKNING -->
     <section id="noteSection" class="card" style="display:none">
       <h2>Ny anteckning</h2>
+
       <div class="row">
-        <label style="flex:1">Datum <input id="dateInput" type="date" /></label>
-        <label style="flex:1">Tid <input id="timeInput" type="time" /></label>
+        <label style="flex:1">Datum
+          <input id="dateInput" type="date" />
+        </label>
+        <label style="flex:1">Tid
+          <input id="timeInput" type="time" />
+        </label>
       </div>
+
       <label><input id="alarmCheck" type="checkbox" /> ⏰ Ställ alarm</label>
+
       <div class="row">
         <label style="flex:1">Känsla
           <select id="moodInput">
@@ -71,25 +78,44 @@
             <option>🌈 Stolt</option>
           </select>
         </label>
-        <label style="flex:1">Taggar <input id="tagsInput" type="text" placeholder="t.ex. skola, katt" /></label>
+
+        <label style="flex:1">Taggar
+          <input id="tagsInput" type="text" placeholder="t.ex. skola, katt" />
+        </label>
       </div>
+
       <label>Innehåll
         <textarea id="contentInput" placeholder="t.ex. 1/2 påse blötmat"></textarea>
-        <label><input id="publicCheck" type="checkbox" /> 🌍 Dela i community</label>
-      </div>
       </label>
-      <label for="imageInput">Bild (valfritt)</label>
-      <input id="imageInput" type="file" accept="image/*" />
+
+      <div class="row" style="align-items:center">
+        <label style="flex:1">Bild (valfritt)
+          <input id="imageInput" type="file" accept="image/*" />
+        </label>
+
+        <!-- Community-delning -->
+        <label style="display:inline-flex; align-items:center; gap:.5rem; margin-top:.5rem">
+          <input id="publicCheck" type="checkbox">
+          🌍 Dela i community
+        </label>
+      </div>
+
       <div class="row" style="margin-top:.6rem">
         <button id="saveBtn" class="pill">Spara</button>
         <button id="clearBtn" class="pill secondary">Rensa</button>
-        
+      </div>
     </section>
 
-    <!-- LISTA -->
+    <!-- MINA ANTECKNINGAR -->
     <section id="notesSection" class="card" style="display:none">
       <h2>Mina anteckningar</h2>
       <div id="notesList" class="empty">Inga anteckningar ännu.</div>
+    </section>
+
+    <!-- COMMUNITY -->
+    <section id="communitySection" class="card" style="display:none">
+      <h2>Community</h2>
+      <div id="communityList" class="empty">Inga delade inlägg ännu.</div>
     </section>
   </main>
 
