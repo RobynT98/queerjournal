@@ -47,10 +47,12 @@
         <img id="userPhoto" alt="">
         <small id="userName"></small>
       </div>
-      <button id="logoutTop" class="toggle-dark" title="Logga ut" style="display:none">🚪</button>
-      <button id="darkToggle" class="toggle-dark" title="Byt tema">🌓</button>
-    </div>
-  </header>
+    <!-- HEADER: lägg till -->
+ <button id="logoutTop" class="toggle-dark" title="Logga ut" style="display:none">🚪</button>
+  <button id="darkToggle" class="toggle-dark" title="Byt tema">🌓</button>
+  <button id="editProfileBtn" class="toggle-dark" title="Redigera profil" style="display:none">✏️</button>
+  </div>
+</header>
 
   <!-- =========================
        5) HUVUDINNEHÅLL
@@ -136,6 +138,39 @@
       <h2>Community</h2>
       <div id="communityList" class="empty">Inga delade inlägg ännu.</div>
     </section>
+    <!-- Min profil – redigerbar -->
+<section id="profileEditSection" class="card" style="display:none;max-width:920px;margin-inline:auto">
+  <h2>Min profil</h2>
+  <div class="row">
+    <label style="flex:1">Visningsnamn
+      <input id="profDisplayName" type="text" placeholder="Ditt namn / smeknamn">
+    </label>
+    <label style="flex:1">Pronomen
+      <input id="profPronouns" type="text" placeholder="t.ex. hen / hon / han / they">
+    </label>
+  </div>
+  <label>Om mig
+    <textarea id="profBio" placeholder="Kort bio"></textarea>
+  </label>
+  <label>Intressen / taggar (komma-separerat)
+    <input id="profTags" type="text" placeholder="t.ex. skola, katt, spel">
+  </label>
+  <div class="row" style="margin-top:.6rem">
+    <button id="saveProfileBtn" class="pill">Spara profil</button>
+    <button id="cancelProfileBtn" class="pill secondary">Stäng</button>
+  </div>
+</section>
+
+<!-- Annans profil – läsläge -->
+<section id="profileViewSection" class="card" style="display:none;max-width:920px;margin-inline:auto">
+  <div id="profileViewHeader" class="row" style="align-items:center;gap:.75rem"></div>
+  <div id="profileViewMeta" class="muted" style="margin:.25rem 0 .75rem"></div>
+  <h3>Publika inlägg</h3>
+  <div id="profileViewPosts" class="empty">Inga publika inlägg ännu.</div>
+  <div class="row" style="margin-top:.6rem">
+    <button id="closeProfileViewBtn" class="pill secondary">Stäng</button>
+  </div>
+</section>
   </main>
 
   <!-- =========================
