@@ -479,4 +479,24 @@
       }
     }
     function rescheduleAll(){
-      (currentNotes||[]).fi
+      (currentNotes || []).filter(n => n.alarm).forEach(scheduleAlarm);
+    }
+
+    // Tema
+    document.getElementById('darkToggle').onclick = () =>
+      document.body.classList.toggle('dark');
+
+  </script>
+
+  <!-- Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      // relativt från /queerjournal/index.html (GitHub Pages)
+      navigator.serviceWorker
+        .register('./sw.js', { scope: './' })
+        .then(reg => console.log('SW OK:', reg.scope))
+        .catch(err => console.warn('SW fail:', err));
+    }
+  </script>
+</body>
+</html>
