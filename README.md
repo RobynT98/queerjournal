@@ -54,3 +54,21 @@ Det innebär att projektägaren **Conri Turesson** har rätt att i framtiden:
 - skapa premium- eller kommersiella varianter av appen.
 
 Ditt bidrag till den öppna versionen kommer alltid att förbli MIT-licensierat.
+
+## 🔮 På gång
+- Profiler och vänlistor.  
+- Chatt och event.  
+- Premiumversion utan reklam.  
+
+## 🛡️ Villkor & Policy
+- [Användarvillkor](TERMS.md)  
+- [Integritetspolicy](PRIVACY.md)  
+- [Cookiepolicy](COOKIES.md)  
+
+## 💌 Kontakt
+Vid frågor: **queerjournal.app@gmail.com**  
+
+---
+© 2025 Queer Journal
+
+
