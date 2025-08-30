@@ -141,4 +141,27 @@
   <!-- App-logik -->
   <script type="module" src="./app.js"></script>
 </body>
+<!-- Cookiebanner -->
+<div id="cookie-banner" 
+     style="position:fixed;bottom:0;left:0;right:0;
+            background:#222;color:#fff;
+            padding:10px;text-align:center;
+            display:none;z-index:9999">
+  Vi använder cookies för att förbättra din upplevelse.
+  <a href="COOKIES.md" style="color:#4ecdc4">Läs mer</a>
+  <button onclick="acceptCookies()" style="margin-left:10px">OK</button>
+</div>
+
+<script>
+function acceptCookies(){
+  localStorage.setItem("cookiesAccepted","true");
+  document.getElementById("cookie-banner").style.display="none";
+}
+window.addEventListener("load", ()=>{
+  if(!localStorage.getItem("cookiesAccepted")){
+    document.getElementById("cookie-banner").style.display="block";
+  }
+});
+</script>
+</div>
 </html>
