@@ -1,45 +1,40 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <!-- =========================
-       1) BAS & SEO
-  ========================== -->
+  <!-- ============== 1) BAS & SEO ============== -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Queer Journal</title>
   <meta name="description" content="Queer Journal – privat dagbok + community. HBTQ+ och NPF-vänligt.">
+  <link rel="canonical" href="https://robynt98.github.io/queerjournal/">
 
-  <!-- Open Graph (för delningar i sociala medier) -->
+  <!-- Open Graph -->
   <meta property="og:title" content="Queer Journal">
   <meta property="og:description" content="Privat dagbok + community i din webbläsare.">
   <meta property="og:image" content="https://robynt98.github.io/queerjournal/android-chrome-512x512.png">
   <meta property="og:type" content="website">
 
-  <!-- =========================
-       2) PWA / APP-IKONER
-  ========================== -->
+  <!-- ============== 2) PWA / IKONER ============== -->
   <link rel="manifest" href="./manifest.webmanifest" />
   <meta name="theme-color" content="#d53369" />
   <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
   <link rel="icon" sizes="32x32" href="./favicon-32x32.png" />
   <link rel="icon" sizes="16x16" href="./favicon-16x16.png" />
 
-  <!-- =========================
-       3) TYPSNITT & STIL
-       (ändra i styles.css – inte här)
-  ========================== -->
+  <!-- ============== 3) TYPSNITT & STIL ============== -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <!-- Rensa ev. gammalt PIN-lås från äldre versioner -->
+  <noscript>Den här appen kräver JavaScript för att fungera.</noscript>
+
   <script>
+    /* Rensa ev. gammalt PIN-lås från äldre versioner */
     try { ['qj.pin','qj.salt','qj.attempts'].forEach(k => localStorage.removeItem(k)); } catch {}
   </script>
 
-  <!-- =========================
-       4) HEADER
-  ========================== -->
+  <!-- ============== 4) HEADER ============== -->
   <header>
     <h1>🌈 Queer Journal</h1>
     <div class="actions">
@@ -47,22 +42,19 @@
         <img id="userPhoto" alt="">
         <small id="userName"></small>
       </div>
-    <!-- HEADER: lägg till -->
- <button id="logoutTop" class="toggle-dark" title="Logga ut" style="display:none">🚪</button>
-  <button id="darkToggle" class="toggle-dark" title="Byt tema">🌓</button>
-  <button id="editProfileBtn" class="toggle-dark" title="Redigera profil" style="display:none">✏️</button>
-  </div>
-</header>
+      <button id="editProfileBtn" class="toggle-dark" title="Redigera profil" style="display:none">👤</button>
+      <button id="logoutTop" class="toggle-dark" title="Logga ut" style="display:none">🚪</button>
+      <button id="darkToggle" class="toggle-dark" title="Byt tema">🌓</button>
+    </div>
+  </header>
 
-  <!-- =========================
-       5) HUVUDINNEHÅLL
-  ========================== -->
+  <!-- ============== 5) HUVUDINNEHÅLL ============== -->
   <main>
-    <!-- 5.1 AUTENTISERING -->
-    <section id="authSection" class="card">
-      <h2>Logga in / Skapa konto</h2>
-      <input id="emailInput" type="email" placeholder="E-post" />
-      <input id="passwordInput" type="password" placeholder="Lösenord" />
+    <!-- 5.1 AUTH -->
+    <section id="authSection" class="card" aria-labelledby="authTitle">
+      <h2 id="authTitle">Logga in / Skapa konto</h2>
+      <input id="emailInput" type="email" autocomplete="username" placeholder="E-post" />
+      <input id="passwordInput" type="password" autocomplete="current-password" placeholder="Lösenord" />
       <div class="row">
         <button id="resetBtn" class="pill secondary">Glömt lösenord</button>
         <button id="loginBtn" class="pill">Logga in</button>
@@ -75,8 +67,8 @@
     </section>
 
     <!-- 5.2 NY ANTECKNING -->
-    <section id="noteSection" class="card" style="display:none">
-      <h2>Ny anteckning</h2>
+    <section id="noteSection" class="card" style="display:none" aria-labelledby="newNoteTitle">
+      <h2 id="newNoteTitle">Ny anteckning</h2>
 
       <div class="row">
         <label style="flex:1">Datum
@@ -128,61 +120,61 @@
     </section>
 
     <!-- 5.3 MINA ANTECKNINGAR -->
-    <section id="notesSection" class="card" style="display:none">
-      <h2>Mina anteckningar</h2>
+    <section id="notesSection" class="card" style="display:none" aria-labelledby="myNotesTitle">
+      <h2 id="myNotesTitle">Mina anteckningar</h2>
       <div id="notesList" class="empty">Inga anteckningar ännu.</div>
     </section>
 
     <!-- 5.4 COMMUNITY -->
-    <section id="communitySection" class="card" style="display:none">
-      <h2>Community</h2>
+    <section id="communitySection" class="card" style="display:none" aria-labelledby="communityTitle">
+      <h2 id="communityTitle">Community</h2>
       <div id="communityList" class="empty">Inga delade inlägg ännu.</div>
     </section>
-    <!-- Min profil – redigerbar -->
-<section id="profileEditSection" class="card" style="display:none;max-width:920px;margin-inline:auto">
-  <h2>Min profil</h2>
-  <div class="row">
-    <label style="flex:1">Visningsnamn
-      <input id="profDisplayName" type="text" placeholder="Ditt namn / smeknamn">
-    </label>
-    <label style="flex:1">Pronomen
-      <input id="profPronouns" type="text" placeholder="t.ex. hen / hon / han / they">
-    </label>
-  </div>
-  <label>Om mig
-    <textarea id="profBio" placeholder="Kort bio"></textarea>
-  </label>
-  <label>Intressen / taggar (komma-separerat)
-    <input id="profTags" type="text" placeholder="t.ex. skola, katt, spel">
-  </label>
-  <div class="row" style="margin-top:.6rem">
-    <button id="saveProfileBtn" class="pill">Spara profil</button>
-    <button id="cancelProfileBtn" class="pill secondary">Stäng</button>
-  </div>
-</section>
 
-<!-- Annans profil – läsläge -->
-<section id="profileViewSection" class="card" style="display:none;max-width:920px;margin-inline:auto">
-  <div id="profileViewHeader" class="row" style="align-items:center;gap:.75rem"></div>
-  <div id="profileViewMeta" class="muted" style="margin:.25rem 0 .75rem"></div>
-  <h3>Publika inlägg</h3>
-  <div id="profileViewPosts" class="empty">Inga publika inlägg ännu.</div>
-  <div class="row" style="margin-top:.6rem">
-    <button id="closeProfileViewBtn" class="pill secondary">Stäng</button>
-  </div>
-</section>
+    <!-- 5.5 MIN PROFIL – REDIGERA -->
+    <section id="profileEditSection" class="card" style="display:none;max-width:920px;margin-inline:auto" aria-labelledby="myProfileTitle">
+      <h2 id="myProfileTitle">Min profil</h2>
+      <div class="row">
+        <label style="flex:1">Visningsnamn
+          <input id="profDisplayName" type="text" placeholder="Ditt namn / smeknamn">
+        </label>
+        <label style="flex:1">Pronomen
+          <input id="profPronouns" type="text" placeholder="t.ex. hen / hon / han / they">
+        </label>
+      </div>
+      <label>Om mig
+        <textarea id="profBio" placeholder="Kort bio"></textarea>
+      </label>
+      <label>Intressen / taggar (komma-separerat)
+        <input id="profTags" type="text" placeholder="t.ex. skola, katt, spel">
+      </label>
+      <div class="row" style="margin-top:.6rem">
+        <button id="saveProfileBtn" class="pill">Spara profil</button>
+        <button id="cancelProfileBtn" class="pill secondary">Stäng</button>
+      </div>
+    </section>
+
+    <!-- 5.6 ANNANS PROFIL – VISNING -->
+    <section id="profileViewSection" class="card" style="display:none;max-width:920px;margin-inline:auto" aria-labelledby="otherProfileTitle">
+      <h2 id="otherProfileTitle" style="display:none">Profil</h2>
+      <div id="profileViewHeader" class="row" style="align-items:center;gap:.75rem"></div>
+      <div id="profileViewMeta" class="muted" style="margin:.25rem 0 .75rem"></div>
+      <h3>Publika inlägg</h3>
+      <div id="profileViewPosts" class="empty">Inga publika inlägg ännu.</div>
+      <div class="row" style="margin-top:.6rem">
+        <button id="closeProfileViewBtn" class="pill secondary">Stäng</button>
+      </div>
+    </section>
   </main>
 
-  <!-- =========================
-       6) FOOTER & NAV
-  ========================== -->
+  <!-- ============== 6) FOOTER & NAV ============== -->
   <footer>
-    <div class="tabs">
-      <button id="listViewBtn"  class="tab active">Lista</button>
-      <button id="dayViewBtn"   class="tab">Dag</button>
-      <button id="weekViewBtn"  class="tab">Vecka</button>
-      <button id="alarmViewBtn" class="tab">Alarm</button>
-      <button id="communityViewBtn" class="tab">Community</button>
+    <div class="tabs" role="tablist" aria-label="Huvudnavigation">
+      <button id="listViewBtn"  class="tab active" role="tab" aria-selected="true">Lista</button>
+      <button id="dayViewBtn"   class="tab" role="tab" aria-selected="false">Dag</button>
+      <button id="weekViewBtn"  class="tab" role="tab" aria-selected="false">Vecka</button>
+      <button id="alarmViewBtn" class="tab" role="tab" aria-selected="false">Alarm</button>
+      <button id="communityViewBtn" class="tab" role="tab" aria-selected="false">Community</button>
     </div>
     <p>
       <a href="TERMS.md">Användarvillkor</a> ·
@@ -192,20 +184,13 @@
     <p>© 2025 Queer Journal</p>
   </footer>
 
-  <!-- =========================
-       7) LJUDFILER (ALARM)
-  ========================== -->
+  <!-- ============== 7) LJUDFILER (ALARM) ============== -->
   <audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
-  <!-- =========================
-       8) HUVUDSCRIPT
-       (All logik i app.js)
-  ========================== -->
+  <!-- ============== 8) HUVUDSCRIPT ============== -->
   <script type="module" src="./app.js"></script>
 
-  <!-- =========================
-       9) COOKIE-BANNER
-  ========================== -->
+  <!-- ============== 9) COOKIE-BANNER ============== -->
   <div id="cookie-banner"
        style="position:fixed;bottom:0;left:0;right:0;background:#222;color:#fff;
               padding:10px;text-align:center;display:none;z-index:9999">
@@ -213,7 +198,6 @@
     <a href="COOKIES.md" style="color:#4ecdc4">Läs mer</a>
     <button onclick="acceptCookies()" style="margin-left:10px">OK</button>
   </div>
-
   <script>
     function acceptCookies(){
       localStorage.setItem("cookiesAccepted","true");
