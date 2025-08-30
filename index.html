@@ -158,451 +158,483 @@
   <audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
   <!-- App-logik -->
-    <script type="module">
-    // -------- Firebase imports --------
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import {
-      getAuth, onAuthStateChanged,
-      signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
-      GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail
-    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import {
-      getFirestore, collection, addDoc, query, where, orderBy,
-      serverTimestamp, onSnapshot, doc, getDoc, getDocs, setDoc,
-      enableIndexedDbPersistence
-    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging.js";
+ <script type="module">
+  // -------- Firebase imports --------
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+  import {
+    getAuth, onAuthStateChanged,
+    signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
+    GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail
+  } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+  import {
+    getFirestore, collection, addDoc, deleteDoc, updateDoc,
+    query, where, orderBy, serverTimestamp, onSnapshot,
+    doc, getDoc, getDocs, setDoc, enableIndexedDbPersistence
+  } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging.js";
 
-    // -------- Config --------
-    const firebaseConfig = {
-      apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
-      authDomain: "queerjournal-1cc9d.firebaseapp.com",
-      projectId: "queerjournal-1cc9d",
-      storageBucket: "queerjournal-1cc9d.firebasestorage.app",
-      messagingSenderId: "53325952423",
-      appId: "1:53325952423:web:24837ecc436332e436b282",
-      measurementId: "G-0T6JCFJCFZ"
-    };
+  // -------- Config --------
+  const firebaseConfig = {
+    apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
+    authDomain: "queerjournal-1cc9d.firebaseapp.com",
+    projectId: "queerjournal-1cc9d",
+    storageBucket: "queerjournal-1cc9d.firebasestorage.app",
+    messagingSenderId: "53325952423",
+    appId: "1:53325952423:web:24837ecc436332e436b282",
+    measurementId: "G-0T6JCFJCFZ"
+  };
 
-    // -------- Init --------
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db   = getFirestore(app);
+  // -------- Init --------
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+  enableIndexedDbPersistence(db).catch(()=>{});
 
-    // Firestore offline cache
-    enableIndexedDbPersistence(db).catch(()=>{ /* redan aktiv eller ej stöd */ });
+  let messaging = null;
+  try { messaging = getMessaging(app); } catch {}
 
-    // (valfritt) Cloud Messaging
-    let messaging = null;
-    try { messaging = getMessaging(app); } catch {}
+  // -------- UI refs --------
+  const emailEl = document.getElementById('emailInput');
+  const passEl  = document.getElementById('passwordInput');
+  const loginBtn = document.getElementById('loginBtn');
+  const registerBtn = document.getElementById('registerBtn');
+  const googleBtn = document.getElementById('googleBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const logoutTop = document.getElementById('logoutTop');
+  const resetBtn  = document.getElementById('resetBtn');
 
-    // -------- UI refs --------
-    const emailEl = document.getElementById('emailInput');
-    const passEl  = document.getElementById('passwordInput');
-    const loginBtn = document.getElementById('loginBtn');
-    const registerBtn = document.getElementById('registerBtn');
-    const googleBtn = document.getElementById('googleBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const logoutTop = document.getElementById('logoutTop');
-    const resetBtn  = document.getElementById('resetBtn');
+  const authSection  = document.getElementById('authSection');
+  const noteSection  = document.getElementById('noteSection');
+  const notesSection = document.getElementById('notesSection');
+  const notesList    = document.getElementById('notesList');
+  const noteTitleEl  = noteSection.querySelector('h2');
 
-    const authSection  = document.getElementById('authSection');
-    const noteSection  = document.getElementById('noteSection');
-    const notesSection = document.getElementById('notesSection');
-    const notesList    = document.getElementById('notesList');
+  const userChip  = document.getElementById('userChip');
+  const userName  = document.getElementById('userName');
+  const userPhoto = document.getElementById('userPhoto');
 
-    const userChip  = document.getElementById('userChip');
-    const userName  = document.getElementById('userName');
-    const userPhoto = document.getElementById('userPhoto');
+  const adminMenu = document.getElementById('adminMenu');
+  const adminOut  = document.getElementById('adminOut');
 
-    const adminMenu = document.getElementById('adminMenu');
-    const adminOut  = document.getElementById('adminOut');
+  const dateInput=document.getElementById('dateInput');
+  const timeInput=document.getElementById('timeInput');
+  const moodInput=document.getElementById('moodInput');
+  const tagsInput=document.getElementById('tagsInput');
+  const contentInput=document.getElementById('contentInput');
+  const imageInput=document.getElementById('imageInput');
+  const alarmCheck=document.getElementById('alarmCheck');
 
-    const dateInput=document.getElementById('dateInput');
-    const timeInput=document.getElementById('timeInput');
-    const moodInput=document.getElementById('moodInput');
-    const tagsInput=document.getElementById('tagsInput');
-    const contentInput=document.getElementById('contentInput');
-    const imageInput=document.getElementById('imageInput');
-    const alarmCheck=document.getElementById('alarmCheck');
+  const saveBtn=document.getElementById('saveBtn');
+  const clearBtn=document.getElementById('clearBtn');
 
-    const saveBtn=document.getElementById('saveBtn');
-    const clearBtn=document.getElementById('clearBtn');
+  // -------- Helpers --------
+  const today=()=> new Date().toISOString().slice(0,10);
+  const now=()=> new Date().toTimeString().slice(0,5);
+  dateInput.value=today(); timeInput.value=now();
 
-    // -------- Helpers --------
-    const today=()=> new Date().toISOString().slice(0,10);
-    const now=()=> new Date().toTimeString().slice(0,5);
-    dateInput.value=today(); timeInput.value=now();
+  if ("Notification" in window && Notification.permission!=="granted"){
+    Notification.requestPermission();
+  }
 
-    if ("Notification" in window && Notification.permission!=="granted"){
-      Notification.requestPermission();
+  const CACHE_KEY="qj.cached.notes.v2";
+  const cacheSet=(arr)=>localStorage.setItem(CACHE_KEY,JSON.stringify(arr));
+  const cacheGet=()=>{try{return JSON.parse(localStorage.getItem(CACHE_KEY)||"[]");}catch{return [];}};
+
+  // ====== STATE FÖR REDIGERING ======
+  let editId = null;                 // vilket dokument redigeras
+  let editOriginalImage = null;      // behåll gammal bild om ingen ny väljs
+
+  function enterEdit(note){
+    editId = note.id;
+    editOriginalImage = note.image ?? null;
+    noteTitleEl.textContent = "Redigera anteckning";
+    saveBtn.textContent = "Uppdatera";
+    clearBtn.textContent = "Avbryt";
+
+    dateInput.value   = note.date || today();
+    timeInput.value   = note.time || now();
+    moodInput.value   = note.mood || "";
+    tagsInput.value   = (note.tags || []).join(', ');
+    contentInput.value= note.content || "";
+    alarmCheck.checked= !!note.alarm;
+    imageInput.value  = ""; // rensa filfält
+    contentInput.focus();
+  }
+
+  function clearForm(){
+    editId = null;
+    editOriginalImage = null;
+    noteTitleEl.textContent = "Ny anteckning";
+    saveBtn.textContent = "Spara";
+    clearBtn.textContent = "Rensa";
+
+    moodInput.value = "";
+    tagsInput.value = "";
+    contentInput.value = "";
+    alarmCheck.checked = false;
+    imageInput.value = "";
+    dateInput.value = today();
+    timeInput.value = now();
+  }
+
+  // Rensa/Avbryt
+  clearBtn.onclick = (e) => { e.preventDefault(); clearForm(); contentInput.focus(); };
+
+  // -------- Auth handlers --------
+  registerBtn.onclick = async () => {
+    try{
+      const cred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
+      await ensureUserDoc(cred.user);
+    }catch(e){ alert(e.message); }
+  };
+
+  loginBtn.onclick = async () => {
+    try{
+      await signInWithEmailAndPassword(auth, emailEl.value, passEl.value);
+    }catch(e){ alert(e.message); }
+  };
+
+  googleBtn.onclick = async () => {
+    try{
+      const provider = new GoogleAuthProvider();
+      const res = await signInWithPopup(auth, provider);
+      await ensureUserDoc(res.user);
+    }catch(e){ alert(e.message); }
+  };
+
+  const doLogout = () => signOut(auth);
+  logoutBtn.onclick  = doLogout;
+  logoutTop.onclick  = doLogout;
+
+  resetBtn.onclick = async () => {
+    const email = (emailEl.value || '').trim();
+    if (!email) return alert("Skriv in din e-post först, så skickar jag en återställningslänk.");
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert("Återställningslänk skickad! Kolla din e-post.");
+    } catch (e) {
+      alert("Kunde inte skicka återställningslänk: " + e.message);
     }
+  };
 
-    const CACHE_KEY="qj.cached.notes.v2";
-    const cacheSet=(arr)=>localStorage.setItem(CACHE_KEY,JSON.stringify(arr));
-    const cacheGet=()=>{try{return JSON.parse(localStorage.getItem(CACHE_KEY)||"[]");}catch{return [];}};
-
-    // -------- Auth handlers --------
-    registerBtn.onclick = async () => {
-      try{
-        const cred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
-        await ensureUserDoc(cred.user);
-      }catch(e){ alert(e.message); }
+  // -------- User doc --------
+  async function ensureUserDoc(user){
+    const ref = doc(db, "users", user.uid);
+    const snap = await getDoc(ref);
+    const base = {
+      uid: user.uid,
+      email: user.email || null,
+      displayName: user.displayName || null,
+      photoURL: user.photoURL || null,
+      updatedAt: serverTimestamp(),
     };
+    if (!snap.exists()){
+      await setDoc(ref, { ...base, createdAt: serverTimestamp(), tokens: [] });
+    } else {
+      await setDoc(ref, base, { merge: true });
+    }
+  }
 
-    loginBtn.onclick = async () => {
-      try{
-        await signInWithEmailAndPassword(auth, emailEl.value, passEl.value);
-      }catch(e){ alert(e.message); }
-    };
+  // -------- (valfritt) Push --------
+  async function setupPush(user){
+    if (!messaging) return;
+    try{
+      const vapidKey = "BCfqKb1YvwfuGzZLJJ2ETaBdGLwWYVoeAB1zSIyA7CxvTelJqJCrwGL5Z5XjV2rRgLohBuWGYOmAaIHZtPTxbDk";
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") return;
 
-    googleBtn.onclick = async () => {
-      try{
-        const provider = new GoogleAuthProvider();
-        const res = await signInWithPopup(auth, provider);
-        await ensureUserDoc(res.user);
-      }catch(e){ alert(e.message); }
-    };
+      const token = await getToken(messaging, { vapidKey });
+      if (!token) return;
 
-    const doLogout = () => signOut(auth);
-    logoutBtn.onclick  = doLogout;
-    logoutTop.onclick  = doLogout;
-
-    resetBtn.onclick = async () => {
-      const email = (emailEl.value || '').trim();
-      if (!email) return alert("Skriv in din e-post först, så skickar jag en återställningslänk.");
-      try {
-        await sendPasswordResetEmail(auth, email);
-        alert("Återställningslänk skickad! Kolla din e-post.");
-      } catch (e) {
-        alert("Kunde inte skicka återställningslänk: " + e.message);
-      }
-    };
-// Rensa-formulärknappen
-clearBtn.onclick = (e) => {e.preventDefault();clearForm();contentInput.focus(); };
-
-    // -------- User doc --------
-    async function ensureUserDoc(user){
       const ref = doc(db, "users", user.uid);
       const snap = await getDoc(ref);
-      const base = {
-        uid: user.uid,
-        email: user.email || null,
-        displayName: user.displayName || null,
-        photoURL: user.photoURL || null,
-        updatedAt: serverTimestamp(),
-      };
-      if (!snap.exists()){
-        await setDoc(ref, { ...base, createdAt: serverTimestamp(), tokens: [] });
-      } else {
-        await setDoc(ref, base, { merge: true });
+      const tokens = (snap.exists() && Array.isArray(snap.data().tokens)) ? snap.data().tokens : [];
+      if (!tokens.includes(token)){
+        tokens.push(token);
+        await setDoc(ref, { tokens, updatedAt: serverTimestamp() }, { merge:true });
       }
-    }
 
-    // -------- (valfritt) Push --------
-    async function setupPush(user){
-      if (!messaging) return;
-      try{
-        const vapidKey = "BCfqKb1YvwfuGzZLJJ2ETaBdGLwWYVoeAB1zSIyA7CxvTelJqJCrwGL5Z5XjV2rRgLohBuWGYOmAaIHZtPTxbDk";
-        const permission = await Notification.requestPermission();
-        if (permission !== "granted") return;
-
-        const token = await getToken(messaging, { vapidKey });
-        if (!token) return;
-
-        const ref = doc(db, "users", user.uid);
-        const snap = await getDoc(ref);
-        const tokens = (snap.exists() && Array.isArray(snap.data().tokens)) ? snap.data().tokens : [];
-        if (!tokens.includes(token)){
-          tokens.push(token);
-          await setDoc(ref, { tokens, updatedAt: serverTimestamp() }, { merge:true });
-        }
-
-        onMessage(messaging, (payload)=>{
-          const body = payload?.notification?.body || "Ny notis";
-          new Notification(payload?.notification?.title || "Queer Journal", {
-            body, icon: "./android-chrome-192x192.png"
-          });
+      onMessage(messaging, (payload)=>{
+        const body = payload?.notification?.body || "Ny notis";
+        new Notification(payload?.notification?.title || "Queer Journal", {
+          body, icon: "./android-chrome-192x192.png"
         });
-      }catch(e){ console.warn("Push setup failed:", e); }
-    }
-
-    // -------- Admin + block --------
-    async function checkAdmin(user){
-      try{
-        const ref = doc(db, "admins", user.uid);
-        const snap = await getDoc(ref);
-        console.log("Admin doc:", snap.exists(), snap.data());
-        if (snap.exists() && snap.data()?.role === "superadmin") {
-          adminMenu.style.display = 'block';
-          adminOut.textContent = "Superadmin inloggad 🚀";
-          return true;
-        }
-      }catch(e){ console.warn("Admin check failed:", e); }
-      adminMenu.style.display = 'none';
-      adminOut.textContent = "";
-      return false;
-    }
-
-    async function findUidByEmail(email) {
-      const qy = query(collection(db, "users"), where("email", "==", email));
-      const s = await getDocs(qy);
-      if (s.empty) return null;
-      return s.docs[0].id || s.docs[0].data().uid;
-    }
-    async function sendWarning(targetUid, reason) {
-      const admin = auth.currentUser;
-      await addDoc(collection(db, "warnings"), {
-        targetUid, reason: reason || null, by: admin?.uid || null, at: serverTimestamp()
       });
-    }
-    async function blockUser(targetUid, reason) {
-      const admin = auth.currentUser;
-      await setDoc(doc(db, "blocks", targetUid), {
-        blocked: true, reason: reason || null, by: admin?.uid || null, at: serverTimestamp()
-      }, { merge: true });
-    }
-    async function checkBlocked(user) {
-      try {
-        const snap = await getDoc(doc(db, "blocks", user.uid));
-        if (snap.exists() && snap.data()?.blocked) {
-          alert("Ditt konto är blockerat. Kontakta support om du tror detta är fel.");
-          await signOut(auth);
-          return true;
-        }
-      } catch(e) { console.warn("Block check failed:", e); }
-      return false;
-    }
-
-    document.getElementById("btnWarn").onclick = async () => {
-      const emailOrUid = prompt("Vem vill du varna? Ange email eller uid:");
-      if (!emailOrUid) return;
-      const reason = prompt("Ange orsak (valfritt):") || "";
-      let targetUid = emailOrUid.trim();
-      if (targetUid.includes("@")) {
-        const found = await findUidByEmail(targetUid);
-        if (!found) return alert("Hittar ingen användare med den e-posten.");
-        targetUid = found;
-      }
-      try { await sendWarning(targetUid, reason); adminOut.textContent = `Varning skickad till ${targetUid}`; }
-      catch(e) { alert("Kunde inte skicka varning: " + e.message); }
-    };
-
-    document.getElementById("btnBlock").onclick = async () => {
-      const emailOrUid = prompt("Vilken användare ska blockeras? Ange email eller uid:");
-      if (!emailOrUid) return;
-      const reason = prompt("Orsak till blockering (valfritt):") || "";
-      let targetUid = emailOrUid.trim();
-      if (targetUid.includes("@")) {
-        const found = await findUidByEmail(targetUid);
-        if (!found) return alert("Hittar ingen användare med den e-posten.");
-        targetUid = found;
-      }
-      if (!confirm(`Blockera användare ${targetUid}?`)) return;
-      try { await blockUser(targetUid, reason); adminOut.textContent = `Användare blockerad: ${targetUid}`; }
-      catch(e) { alert("Kunde inte blockera: " + e.message); }
-    };
-
-    // -------- Live-lyssning notes --------
-    let unsubscribe = null;
-    let currentNotes = [];
-
-    function startNotesListener(uid){
-      if (unsubscribe) { try { unsubscribe(); } catch {} }
-      const qy = query(
-        collection(db,"notes"),
-        where("uid","==",uid),
-        orderBy("date","desc")
-      );
-      unsubscribe = onSnapshot(
-        qy,
-        { includeMetadataChanges:true },
-        (snap)=>{
-          const arr=[];
-          snap.forEach(d=>arr.push(d.data()));
-          arr.sort((a,b)=> (b.date + (b.time||"")).localeCompare(a.date + (a.time||"")));
-          currentNotes = arr;
-          cacheSet(currentNotes);
-          render();
-          rescheduleAll();
-        },
-        (err)=>{
-          console.warn("Snapshot error:", err);
-          currentNotes = cacheGet();
-          render();
-        }
-      );
-    }
-
-    // -------- Auth state --------
-    onAuthStateChanged(auth, async (user)=>{
-      if(user){
-        // visa app
-        authSection.style.display='none';
-        noteSection.style.display='block';
-        notesSection.style.display='block';
-        logoutBtn.style.display='';
-        logoutTop.style.display='';
-        resetBtn.style.display='none';
-        userChip.style.display='';
-        userName.textContent = user.displayName || user.email || 'Inloggad';
-        userPhoto.src = user.photoURL || './android-chrome-192x192.png';
-
-        // spärrkoll
-        const isBlocked = await checkBlocked(user);
-        if (isBlocked) return;
-
-        await ensureUserDoc(user);
-        startNotesListener(user.uid);
-        setupPush(user);
-        checkAdmin(user);
-      }else{
-        // visa inloggning
-        authSection.style.display='block';
-        noteSection.style.display='none';
-        notesSection.style.display='none';
-        logoutBtn.style.display='none';
-        logoutTop.style.display='none';
-        resetBtn.style.display='';
-        userChip.style.display='none';
-        adminMenu.style.display='none';
-        if (unsubscribe) { try { unsubscribe(); } catch {} }
-      }
-    });
-// -------- Spara anteckning --------
-saveBtn.onclick = async () => {
-  const user = auth.currentUser;
-  if (!user) { alert("Logga in först."); return; }
-
-  try {
-    const file = imageInput.files[0];
-    const imgData = file
-      ? await new Promise(res => {
-          const r = new FileReader();
-          r.onload = () => res(r.result);
-          r.readAsDataURL(file);
-        })
-      : null;
-
-    const tags = (tagsInput.value || "")
-      .split(",")
-      .map(s => s.trim())
-      .filter(Boolean);
-
-    const note = {
-      uid: user.uid,
-      date: dateInput.value || today(),
-      time: timeInput.value || now(),
-      mood: moodInput.value || "",
-      tags,
-      content: (contentInput.value || "").trim(),
-      image: imgData || null,
-      alarm: Boolean(alarmCheck.checked),
-      createdAt: serverTimestamp(),
-    };
-
-    await addDoc(collection(db, "notes"), note);
-    clearForm();
-  } catch (e) {
-    console.error("Save failed:", e);
-    alert("Kunde inte spara: " + (e.message || e.code));
+    }catch(e){ console.warn("Push setup failed:", e); }
   }
-};
 
-// Helt separat funktion – **inte** inuti saveBtn.onclick
-function clearForm() {
-  // text/val
-  moodInput.value = "";
-  tagsInput.value = "";
-  contentInput.value = "";
-  alarmCheck.checked = false;
-
-  // fil
-  imageInput.value = "";
-
-  // datum/tid tillbaka till nu
-  dateInput.value = new Date().toISOString().slice(0, 10);
-  timeInput.value = new Date().toTimeString().slice(0, 5);
-}
-    // Vyer & rendering
-    let viewMode="list";
-    const setActive=id=>{document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');};
-    document.getElementById('listViewBtn').onclick=()=>{setActive('listViewBtn');viewMode='list';render();};
-    document.getElementById('dayViewBtn').onclick =()=>{setActive('dayViewBtn');viewMode='day';render();};
-    document.getElementById('weekViewBtn').onclick=()=>{setActive('weekViewBtn');viewMode='week';render();};
-    document.getElementById('alarmViewBtn').onclick=()=>{setActive('alarmViewBtn');viewMode='alarm';render();};
-
-    function render() {
-      if (!currentNotes.length) {
-        notesList.innerHTML = '<div class="empty">Inga anteckningar.</div>';
-        return;
+  // -------- Admin + block --------
+  async function checkAdmin(user){
+    try{
+      const ref = doc(db, "admins", user.uid);
+      const snap = await getDoc(ref);
+      if (snap.exists() && snap.data()?.role === "superadmin") {
+        adminMenu.style.display = 'block';
+        adminOut.textContent = "Superadmin inloggad 🚀";
+        return true;
       }
+    }catch(e){ console.warn("Admin check failed:", e); }
+    adminMenu.style.display = 'none';
+    adminOut.textContent = "";
+    return false;
+  }
 
-      let list = [...currentNotes];
-      if (viewMode === 'day') {
-        const iso = today();
-        list = list.filter(n => n.date === iso);
-      } else if (viewMode === 'week') {
-        const d = new Date();
-        const day = (d.getDay() || 7);
-        const mon = new Date(d); mon.setDate(d.getDate() - day + 1);
-        const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-        const a = mon.toISOString().slice(0,10), b = sun.toISOString().slice(0,10);
-        list = list.filter(n => n.date >= a && n.date <= b);
-      } else if (viewMode === 'alarm') {
-        list = list.filter(n => n.alarm);
+  async function findUidByEmail(email) {
+    const qy = query(collection(db, "users"), where("email", "==", email));
+    const s = await getDocs(qy);
+    if (s.empty) return null;
+    return s.docs[0].id || s.docs[0].data().uid;
+  }
+  async function sendWarning(targetUid, reason) {
+    const admin = auth.currentUser;
+    await addDoc(collection(db, "warnings"), { targetUid, reason: reason || null, by: admin?.uid || null, at: serverTimestamp() });
+  }
+  async function blockUser(targetUid, reason) {
+    const admin = auth.currentUser;
+    await setDoc(doc(db, "blocks", targetUid), { blocked: true, reason: reason || null, by: admin?.uid || null, at: serverTimestamp() }, { merge: true });
+  }
+  async function checkBlocked(user) {
+    try {
+      const snap = await getDoc(doc(db, "blocks", user.uid));
+      if (snap.exists() && snap.data()?.blocked) {
+        alert("Ditt konto är blockerat. Kontakta support om du tror detta är fel.");
+        await signOut(auth);
+        return true;
       }
+    } catch(e) { console.warn("Block check failed:", e); }
+    return false;
+  }
 
-      notesList.innerHTML = '';
-      list.forEach(n => {
-        const div = document.createElement('div');
-        div.className = 'entry';
-        const title =
-          (n.mood ? `<span class="emoji">${n.mood.split(' ')[0]}</span>` : '') +
-          (n.content?.split('\n')[0]?.slice(0,40) || 'Anteckning');
-        div.innerHTML = `
-          <strong>${title}</strong><br>
-          <span class="muted">${n.date} ${n.time || ''} ${n.alarm ? '⏰' : ''}</span>
-          <p>${(n.content || '').replace(/\n/g,'<br>')}</p>
-          ${(n.tags || []).map(t => `<span class="badge">#${t}</span>`).join(' ')}
-          ${n.image ? `<img class="thumb" src="${n.image}" alt="bild">` : ''}
-        `;
-        notesList.appendChild(div);
-      });
+  document.getElementById("btnWarn").onclick = async () => {
+    const emailOrUid = prompt("Vem vill du varna? Ange email eller uid:");
+    if (!emailOrUid) return;
+    const reason = prompt("Ange orsak (valfritt):") || "";
+    let targetUid = emailOrUid.trim();
+    if (targetUid.includes("@")) {
+      const found = await findUidByEmail(targetUid);
+      if (!found) return alert("Hittar ingen användare med den e-posten.");
+      targetUid = found;
     }
+    try { await sendWarning(targetUid, reason); adminOut.textContent = `Varning skickad till ${targetUid}`; }
+    catch(e) { alert("Kunde inte skicka varning: " + e.message); }
+  };
 
-    // Alarm (klientside)
-    function scheduleAlarm(note) {
-      if (!note.date || !note.time) return;
-      const dt = new Date(note.date + 'T' + note.time);
-      const diff = dt.getTime() - Date.now();
-      if (diff <= 0) return;
-      setTimeout(() => triggerAlarm(note), diff);
+  document.getElementById("btnBlock").onclick = async () => {
+    const emailOrUid = prompt("Vilken användare ska blockeras? Ange email eller uid:");
+    if (!emailOrUid) return;
+    const reason = prompt("Orsak till blockering (valfritt):") || "";
+    let targetUid = emailOrUid.trim();
+    if (targetUid.includes("@")) {
+      const found = await findUidByEmail(targetUid);
+      if (!found) return alert("Hittar ingen användare med den e-posten.");
+      targetUid = found;
     }
-    function triggerAlarm(note) {
-      const audio = document.getElementById('alarmSound');
-      audio?.play().catch(()=>{});
-      const body = note.content || 'Dags att kolla din anteckning!';
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('⏰ Alarm!', { body, icon: './android-chrome-192x192.png' });
+    if (!confirm(`Blockera användare ${targetUid}?`)) return;
+    try { await blockUser(targetUid, reason); adminOut.textContent = `Användare blockerad: ${targetUid}`; }
+    catch(e) { alert("Kunde inte blockera: " + e.message); }
+  };
+
+  // -------- Live-lyssning notes --------
+  let unsubscribe = null;
+  let currentNotes = [];
+
+  function startNotesListener(uid){
+    if (unsubscribe) { try { unsubscribe(); } catch {} }
+    const qy = query(
+      collection(db,"notes"),
+      where("uid","==",uid),
+      orderBy("date","desc")
+    );
+    unsubscribe = onSnapshot(
+      qy,
+      { includeMetadataChanges:true },
+      (snap)=>{
+        const arr=[];
+        // Viktigt: ta med dokument-ID för radera/redigera
+        snap.forEach(d=> arr.push({ id: d.id, ...d.data() }));
+        arr.sort((a,b)=> (b.date + (b.time||"")).localeCompare(a.date + (a.time||"")));
+        currentNotes = arr;
+        cacheSet(currentNotes);
+        render();
+        rescheduleAll();
+      },
+      (err)=>{
+        console.warn("Snapshot error:", err);
+        currentNotes = cacheGet();
+        render();
+      }
+    );
+  }
+
+  // -------- Auth state --------
+  onAuthStateChanged(auth, async (user)=>{
+    if(user){
+      authSection.style.display='none';
+      noteSection.style.display='block';
+      notesSection.style.display='block';
+      logoutBtn.style.display='';
+      logoutTop.style.display='';
+      resetBtn.style.display='none';
+      userChip.style.display='';
+      userName.textContent = user.displayName || user.email || 'Inloggad';
+      userPhoto.src = user.photoURL || './android-chrome-192x192.png';
+
+      const isBlocked = await checkBlocked(user);
+      if (isBlocked) return;
+
+      await ensureUserDoc(user);
+      startNotesListener(user.uid);
+      setupPush(user);
+      checkAdmin(user);
+    }else{
+      authSection.style.display='block';
+      noteSection.style.display='none';
+      notesSection.style.display='none';
+      logoutBtn.style.display='none';
+      logoutTop.style.display='none';
+      resetBtn.style.display='';
+      userChip.style.display='none';
+      adminMenu.style.display='none';
+      if (unsubscribe) { try { unsubscribe(); } catch {} }
+    }
+  });
+
+  // -------- Skapa / Uppdatera anteckning --------
+  saveBtn.onclick = async () => {
+    const user = auth.currentUser;
+    if(!user){alert("Logga in först.");return;}
+
+    try{
+      // Läs ev. vald bild
+      const file=imageInput.files[0];
+      const imgData = file ? await new Promise(res=>{
+        const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file);
+      }) : null;
+
+      const tags = (tagsInput.value||"").split(',').map(s=>s.trim()).filter(Boolean);
+
+      const payload = {
+        date:dateInput.value || today(),
+        time:timeInput.value || now(),
+        mood:moodInput.value || "",
+        tags,
+        content:(contentInput.value||"").trim(),
+        image: imgData !== null ? imgData : editOriginalImage,  // behåll gammal bild om ingen ny valts
+        alarm:Boolean(alarmCheck.checked),
+        updatedAt: serverTimestamp()
+      };
+
+      if (editId) {
+        // Uppdatera befintlig
+        await updateDoc(doc(db,"notes", editId), payload);
       } else {
-        alert('⏰ ' + body);
+        // Skapa ny
+        await addDoc(collection(db,"notes"), {
+          uid:user.uid,
+          ...payload,
+          createdAt: serverTimestamp()
+        });
       }
+
+      clearForm();
+    }catch(e){
+      console.error("Save failed:", e);
+      alert("Kunde inte spara: " + (e.message || e.code));
     }
-    function rescheduleAll() {
-      (currentNotes || []).filter(n => n.alarm).forEach(scheduleAlarm);
+  };
+
+  // -------- Vyer & rendering --------
+  let viewMode="list";
+  const setActive=id=>{document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');};
+  document.getElementById('listViewBtn').onclick=()=>{setActive('listViewBtn');viewMode='list';render();};
+  document.getElementById('dayViewBtn').onclick =()=>{setActive('dayViewBtn');viewMode='day';render();};
+  document.getElementById('weekViewBtn').onclick=()=>{setActive('weekViewBtn');viewMode='week';render();};
+  document.getElementById('alarmViewBtn').onclick=()=>{setActive('alarmViewBtn');viewMode='alarm';render();};
+
+  function render() {
+    if (!currentNotes.length) {
+      notesList.innerHTML = '<div class="empty">Inga anteckningar.</div>';
+      return;
     }
 
-    // Tema
-    document.getElementById('darkToggle').onclick = () =>
-      document.body.classList.toggle('dark');
-
-    // Service Worker (PWA)
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js', { scope: './' })
-        .catch(err => console.warn('SW fail:', err));
+    let list = [...currentNotes];
+    if (viewMode === 'day') {
+      const iso = today();
+      list = list.filter(n => n.date === iso);
+    } else if (viewMode === 'week') {
+      const d = new Date();
+      const day = (d.getDay() || 7);
+      const mon = new Date(d); mon.setDate(d.getDate() - day + 1);
+      const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+      const a = mon.toISOString().slice(0,10), b = sun.toISOString().slice(0,10);
+      list = list.filter(n => n.date >= a && n.date <= b);
+    } else if (viewMode === 'alarm') {
+      list = list.filter(n => n.alarm);
     }
-  </script>
 
+    notesList.innerHTML = '';
+    list.forEach(n => {
+      const div = document.createElement('div');
+      div.className = 'entry';
+      const title =
+        (n.mood ? `<span class="emoji">${n.mood.split(' ')[0]}</span>` : '') +
+        (n.content?.split('\n')[0]?.slice(0,40) || 'Anteckning');
+
+      div.innerHTML = `
+        <strong>${title}</strong><br>
+        <span class="muted">${n.date} ${n.time || ''} ${n.alarm ? '⏰' : ''}</span>
+        <p>${(n.content || '').replace(/\n/g,'<br>')}</p>
+        ${(n.tags || []).map(t => `<span class="badge">#${t}</span>`).join(' ')}
+        ${n.image ? `<img class="thumb" src="${n.image}" alt="bild">` : ''}
+        <div style="margin-top:.5rem;display:flex;gap:.5rem;flex-wrap:wrap">
+          <button class="pill secondary editBtn" data-id="${n.id}">✏️ Redigera</button>
+          <button class="pill secondary deleteBtn" data-id="${n.id}">🗑 Radera</button>
+        </div>
+      `;
+      notesList.appendChild(div);
+
+      // Handlers
+      div.querySelector('.editBtn').onclick = () => enterEdit(n);
+      div.querySelector('.deleteBtn').onclick = async () => {
+        if (!n.id) return alert("Saknar dokument-ID.");
+        if (!confirm("Radera den här anteckningen?")) return;
+        try { await deleteDoc(doc(db, "notes", n.id)); }
+        catch(e){ alert("Kunde inte radera: " + e.message); }
+      };
+    });
+  }
+
+  // ===== Alarm (klientside) =====
+  function scheduleAlarm(note) {
+    if (!note.date || !note.time) return;
+    const dt = new Date(note.date + 'T' + note.time);
+    const diff = dt.getTime() - Date.now();
+    if (diff <= 0) return;
+    setTimeout(() => triggerAlarm(note), diff);
+  }
+  function triggerAlarm(note) {
+    const audio = document.getElementById('alarmSound');
+    audio?.play().catch(()=>{});
+    const body = note.content || 'Dags att kolla din anteckning!';
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('⏰ Alarm!', { body, icon: './android-chrome-192x192.png' });
+    } else {
+      alert('⏰ ' + body);
+    }
+  }
+  function rescheduleAll() {
+    (currentNotes || []).filter(n => n.alarm).forEach(scheduleAlarm);
+  }
+
+  // Tema
+  document.getElementById('darkToggle').onclick = () =>
+    document.body.classList.toggle('dark');
+
+  // Service Worker (PWA)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .catch(err => console.warn('SW fail:', err));
+  }
+</script>
 </body>
 </html>
