@@ -1,10 +1,7 @@
 {
-  "id": "/queerjournal/",
   "name": "Queer Journal",
   "short_name": "QJournal",
-  "lang": "sv",
-  "dir": "ltr",
-  "description": "En privat dagboksapp för HBTQ+-personer där anteckningar sparas säkert i molnet och synkas mellan enheter.",
+  "description": "En privat dagboksapp som synkar via Firebase och funkar offline.",
   "start_url": "/queerjournal/index.html",
   "scope": "/queerjournal/",
   "display": "standalone",
@@ -13,49 +10,15 @@
   "theme_color": "#d53369",
   "orientation": "portrait-primary",
   "icons": [
-    {
-      "src": "android-chrome-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "android-chrome-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "apple-touch-icon.png",
-      "sizes": "180x180",
-      "type": "image/png"
-    },
-    {
-      "src": "favicon-32x32.png",
-      "sizes": "32x32",
-      "type": "image/png"
-    },
-    {
-      "src": "favicon-16x16.png",
-      "sizes": "16x16",
-      "type": "image/png"
-    }
+    { "src": "android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "favicon-32x32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "favicon-16x16.png", "sizes": "16x16", "type": "image/png" }
   ],
   "screenshots": [
-    {
-      "src": "screenshot1.png",
-      "sizes": "691x1536",
-      "type": "image/png",
-      "label": "Inloggningsskärm i ljust läge"
-    },
-    {
-      "src": "screenshot2.png",
-      "sizes": "691x1536",
-      "type": "image/png",
-      "label": "Inloggningsskärm i mörkt läge"
-    }
+    { "src": "screenshot1.png", "sizes": "691x1536", "type": "image/png", "label": "Ljust läge" },
+    { "src": "screenshot2.png", "sizes": "691x1536", "type": "image/png", "label": "Mörkt läge" }
   ],
-  "launch_handler": {
-    "client_mode": "focus-existing"
-  }
+  "launch_handler": { "client_mode": "focus-existing" }
 }
