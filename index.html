@@ -16,128 +16,324 @@
 
   <!-- Font -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" />
+<style>
+  :root {
+    --brand1: #d53369;
+    --brand2: #daae51;
+    --btn1: #6a11cb;
+    --btn2: #2575fc;
+    --bg: #fafafa;
+    --text: #222;
+    --card: #fff;
+    --muted: #666;
+    --line: #e8e8e8;
+    --bg-dark: #121212;
+    --text-dark: #eee;
+    --card-dark: #1f1f1f;
+    --line-dark: #2a2a2a;
+  }
 
-  <style>
-    :root{ --brand1:#d53369;--brand2:#daae51; --btn1:#6a11cb;--btn2:#2575fc;
-      --bg:#fafafa;--text:#222;--card:#fff;--muted:#666;--line:#e8e8e8;
-      --bg-dark:#121212;--text-dark:#eee;--card-dark:#1f1f1f;--line-dark:#2a2a2a;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:'Quicksand',sans-serif;background:var(--bg);color:var(--text);transition:.25s}
-    body.dark{background:var(--bg-dark);color:var(--text-dark)}
-    header{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1rem;background:linear-gradient(90deg,var(--brand1),var(--brand2));color:#fff}
-    header h1{margin:0;font-size:1.2rem}
-    .actions{display:flex;align-items:center;gap:.5rem}
-    .toggle-dark{cursor:pointer;background:rgba(255,255,255,.2);border:0;border-radius:999px;min-width:36px;height:36px;color:#fff;padding:0 10px}
-    .user-chip{display:flex;align-items:center;gap:.5rem}
-    .user-chip img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.6)}
-    .user-chip small{opacity:.9}
+  * {
+    box-sizing: border-box;
+  }
 
-    main{padding:1rem;display:grid;gap:1rem;max-width:920px;margin:0 auto}
-    .card{background:var(--card);border-radius:12px;padding:1rem;box-shadow:0 3px 8px rgba(0,0,0,.08);border:1px solid var(--line)}
-    body.dark .card{background:var(--card-dark);border-color:var(--line-dark)}
-    .row{display:flex;gap:.5rem;flex-wrap:wrap}
-    label{display:inline-flex;align-items:center;gap:.4rem;margin:.25rem 0}
-    input,select,textarea,button{font:inherit}
-    input,select,textarea{width:100%;padding:.55rem .7rem;border-radius:.7rem;border:1px solid var(--line);background:inherit;color:inherit}
-    textarea{min-height:120px}
-    .pill{border-radius:999px;border:0;background:linear-gradient(90deg,var(--btn1),var(--btn2));color:#fff;padding:.5rem 1rem;cursor:pointer}
-    .pill.secondary{background:#ccc;color:#222}
-    .gbtn{background:#fff;color:#222;border:1px solid var(--line);display:inline-flex;align-items:center;gap:.5rem}
-    .gbtn img{width:18px;height:18px}
-    .badge{display:inline-block;padding:.15rem .5rem;border-radius:999px;border:1px solid var(--line);font-size:.8rem;margin-right:.25rem}
-    .thumb{max-width:120px;border-radius:.5rem;display:block;margin-top:.5rem}
-    .muted{color:var(--muted)}
-    footer{position:fixed;bottom:0;left:0;right:0;background:#eee;border-top:1px solid var(--line)}
-    body.dark footer{background:#1e1e1e;border-color:var(--line-dark)}
-    .tabs{max-width:920px;margin:0 auto;display:flex;gap:.25rem;padding:.4rem}
-    .tab{flex:1;background:transparent;border:0;padding:.6rem 0;cursor:pointer;color:inherit;border-bottom:2px solid transparent}
-    .tab.active{font-weight:600;border-color:var(--brand1)}
-    .entry{border:1px solid var(--line);padding:.8rem;border-radius:.75rem;margin:.5rem 0}
-    body.dark .entry{border-color:var(--line-dark)}
-    .emoji{font-size:1.15rem;margin-right:.35rem}
-    .empty{padding:.6rem 0}
-    .spacer{height:72px}
-    /* Magisk bakgrundsfärg */
-body {
-  background: linear-gradient(45deg, #4e76d5, #d16d8c); /* Blå till lila */
-  color: #fff;
-  font-family: 'Roboto', sans-serif;
-}
+  /* För ljust läge */
+  body {
+    background: linear-gradient(45deg, #4e76d5, #d16d8c); /* Blå till lila */
+    color: #333; /* Mörk textfärg för ljust läge */
+    font-family: 'Roboto', sans-serif;
+    transition: .25s;
+  }
 
-/* Header - gör den lite mer mystisk */
-header {
-  background-color: #3e3e3e;
-  padding: 20px;
-  text-align: center;
-}
+  /* För mörkt läge */
+  body.dark {
+    background: linear-gradient(45deg, #2a2a2a, #4d4d4d); /* Mörkare bakgrund */
+    color: #fff; /* Vit text för mörkt läge */
+  }
 
-header h1 {
-  font-size: 2em;
-  color: #fff;
-}
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .9rem 1rem;
+    background: linear-gradient(90deg, var(--brand1), var(--brand2));
+    color: #fff;
+  }
 
-/* Footer design */
-footer {
-  background-color: #333;
-  color: #fff;
-  padding: 10px 0;
-  text-align: center;
-}
+  header h1 {
+    margin: 0;
+    font-size: 1.2rem;
+  }
 
-footer a {
-  color: #4ecdc4;
-  text-decoration: none;
-  margin: 0 15px;
-}
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
 
-footer a:hover {
-  text-decoration: underline;
-}
+  .toggle-dark {
+    cursor: pointer;
+    background: rgba(255, 255, 255, .2);
+    border: 0;
+    border-radius: 999px;
+    min-width: 36px;
+    height: 36px;
+    color: #fff;
+    padding: 0 10px;
+  }
 
-/* För att göra länkar och knappar mer synliga */
-button {
-  background-color: #4ecdc4;
-  color: #fff;
-  border: none;
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-  border-radius: 5px;
-}
+  .user-chip {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
 
-button:hover {
-  background-color: #5bc8a2;
-}
+  .user-chip img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, .6);
+  }
 
-/* Större och mer tillgängliga knappar för NPF-vänlighet */
-input[type="text"],
-input[type="password"],
-textarea {
-  font-size: 18px;
-  padding: 10px;
-  margin: 10px 0;
-  width: 100%;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-}
+  .user-chip small {
+    opacity: .9;
+  }
 
-/* För mer mystiska effekter */
-a {
-  text-decoration: none;
-  color: #d6b5ff;
-}
+  main {
+    padding: 1rem;
+    display: grid;
+    gap: 1rem;
+    max-width: 920px;
+    margin: 0 auto;
+  }
 
-a:hover {
-  color: #f9f4ff;
-}
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, .08);
+    border: 1px solid var(--line);
+  }
 
-/* Anpassad textstorlek för läsbarhet */
-p, label {
-  font-size: 18px;
-}
+  body.dark .card {
+    background: var(--card-dark);
+    border-color: var(--line-dark);
+  }
 
-  </style>
+  .row {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+  }
+
+  label {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    margin: .25rem 0;
+  }
+
+  input, select, textarea, button {
+    font: inherit;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: .55rem .7rem;
+    border-radius: .7rem;
+    border: 1px solid var(--line);
+    background: inherit;
+    color: inherit;
+  }
+
+  textarea {
+    min-height: 120px;
+  }
+
+  .pill {
+    border-radius: 999px;
+    border: 0;
+    background: linear-gradient(90deg, var(--btn1), var(--btn2));
+    color: #fff;
+    padding: .5rem 1rem;
+    cursor: pointer;
+  }
+
+  .pill.secondary {
+    background: #ccc;
+    color: #222;
+  }
+
+  .gbtn {
+    background: #fff;
+    color: #222;
+    border: 1px solid var(--line);
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+  }
+
+  .gbtn img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: .15rem .5rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    font-size: .8rem;
+    margin-right: .25rem;
+  }
+
+  .thumb {
+    max-width: 120px;
+    border-radius: .5rem;
+    display: block;
+    margin-top: .5rem;
+  }
+
+  .muted {
+    color: var(--muted);
+  }
+
+  footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #eee;
+    border-top: 1px solid var(--line);
+  }
+
+  body.dark footer {
+    background: #1e1e1e;
+    border-color: var(--line-dark);
+  }
+
+  .tabs {
+    max-width: 920px;
+    margin: 0 auto;
+    display: flex;
+    gap: .25rem;
+    padding: .4rem;
+  }
+
+  .tab {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    padding: .6rem 0;
+    cursor: pointer;
+    color: inherit;
+    border-bottom: 2px solid transparent;
+  }
+
+  .tab.active {
+    font-weight: 600;
+    border-color: var(--brand1);
+  }
+
+  .entry {
+    border: 1px solid var(--line);
+    padding: .8rem;
+    border-radius: .75rem;
+    margin: .5rem 0;
+  }
+
+  body.dark .entry {
+    border-color: var(--line-dark);
+  }
+
+  .emoji {
+    font-size: 1.15rem;
+    margin-right: .35rem;
+  }
+
+  .empty {
+    padding: .6rem 0;
+  }
+
+  .spacer {
+    height: 72px;
+  }
+
+  /* För ljust läge */
+  body {
+    background: linear-gradient(45deg, #4e76d5, #d16d8c); /* Blå till lila */
+    color: #333; /* Mörk textfärg för ljust läge */
+    font-family: 'Roboto', sans-serif;
+    transition: .25s;
+  }
+
+  /* För mörkt läge */
+  body.dark {
+    background: linear-gradient(45deg, #2a2a2a, #4d4d4d); /* Mörkare bakgrund */
+    color: #fff; /* Vit text för mörkt läge */
+  }
+
+  header h1,
+  footer,
+  p,
+  label {
+    color: inherit; /* Använder förälderns textfärg */
+  }
+
+  footer {
+    background-color: #333;
+    color: #fff;
+  }
+
+  footer a {
+    color: #4ecdc4;
+  }
+
+  footer a:hover {
+    text-decoration: underline;
+  }
+
+  button {
+    background-color: #4ecdc4;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+
+  button:hover {
+    background-color: #5bc8a2;
+  }
+
+  input[type="text"],
+  input[type="password"],
+  textarea {
+    font-size: 18px;
+    padding: 10px;
+    margin: 10px 0;
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+
+  a {
+    text-decoration: none;
+    color: #d6b5ff;
+  }
+
+  a:hover {
+    color: #f9f4ff;
+  }
+
+  p,
+  label {
+    font-size: 18px;
+  }
+</style>
+
 </head>
 <body>
   <script>
