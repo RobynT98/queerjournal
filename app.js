@@ -32,9 +32,7 @@ enableIndexedDbPersistence(db).catch(()=>{});
 // ------------ Helpers ------------
 const today = () => new Date().toISOString().slice(0,10);
 const now   = () => new Date().toTimeString().slice(0,5);
-
 const byNewest = (a,b) => {
-  // sortera primärt på createdAt (om finns), annars datum+tid
   const ca = a.createdAt?.seconds ?? 0;
   const cb = b.createdAt?.seconds ?? 0;
   if (cb !== ca) return cb - ca;
@@ -128,17 +126,32 @@ resetBtn.onclick = async () => {
 async function ensureUserDoc(user){
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
-  const base = {
-    uid: user.uid,
-    email: user.email || null,
-    displayName: user.displayName || null,
-    photoURL: user.photoURL || null,
-    updatedAt: serverTimestamp(),
-  };
+  const fallbackName = user.displayName || (user.email ? user.email.split('@')[0] : 'Användare');
+
   if (!snap.exists()){
-    await setDoc(ref, { ...base, createdAt: serverTimestamp(), tokens: [] });
+    const newDoc = {
+      uid: user.uid,
+      email: user.email || null,
+      displayName: fallbackName,
+      photoURL: user.photoURL || null,
+      pronouns: '',
+      bio: '',
+      tags: [],
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      tokens: []
+    };
+    await setDoc(ref, newDoc);
+    return newDoc;
   } else {
-    await setDoc(ref, base, { merge: true });
+    const updates = { updatedAt: serverTimestamp() };
+    const data = snap.data() || {};
+    if (!data.displayName && fallbackName) updates.displayName = fallbackName;
+    if (!data.photoURL && user.photoURL)   updates.photoURL   = user.photoURL;
+    if (Object.keys(updates).length > 1) {
+      await setDoc(ref, updates, { merge: true });
+    }
+    return { ...data, ...updates };
   }
 }
 
@@ -173,6 +186,8 @@ saveBtn.onclick = async () => {
 
     const tags = (tagsInput.value||"").split(',').map(s=>s.trim()).filter(Boolean);
 
+    const profile = await ensureUserDoc(user);
+
     const payload = {
       uid: user.uid,
       date: dateInput.value || today(),
@@ -183,18 +198,17 @@ saveBtn.onclick = async () => {
       image: imgData !== null ? imgData : editOriginalImage,
       alarm: !!alarmCheck.checked,
       public: !!publicCheck.checked,
-      reactions: { heart: 0, rainbow: 0, sparkles: 0 }, // init vid ny
+      reactions: { heart: 0, rainbow: 0, sparkles: 0 },
       flagCount: 0,
       author: {
         uid: user.uid,
-        name: user.displayName || user.email || "Anonym",
-        photo: user.photoURL || null
+        name: profile?.displayName || user.displayName || user.email || "Anonym",
+        photo: profile?.photoURL || user.photoURL || null
       },
       updatedAt: serverTimestamp(),
     };
 
     if (editId) {
-      // behåll befintliga reactions/flagCount om vi inte skickar om dem
       await updateDoc(doc(db, "notes", editId), payload);
     } else {
       await addDoc(collection(db, "notes"), {
@@ -218,7 +232,6 @@ function startNotesListener(uid){
   const qy = query(
     collection(db,"notes"),
     where("uid","==",uid)
-    // medvetet ingen orderBy -> vi sorterar klientside och slipper indexkrav
   );
   unsubscribe = onSnapshot(qy, (snap)=>{
     const arr = [];
@@ -250,13 +263,13 @@ const setActive = (id) => {
   document.getElementById(id).classList.add('active');
 };
 
-document.getElementById('listViewBtn').onclick  = ()=>{ setActive('listViewBtn');  viewMode='list';  notesSection.style.display='block'; communitySection.style.display='none'; render(); };
-document.getElementById('dayViewBtn').onclick   = ()=>{ setActive('dayViewBtn');   viewMode='day';   notesSection.style.display='block'; communitySection.style.display='none'; render(); };
-document.getElementById('weekViewBtn').onclick  = ()=>{ setActive('weekViewBtn');  viewMode='week';  notesSection.style.display='block'; communitySection.style.display='none'; render(); };
-document.getElementById('alarmViewBtn').onclick = ()=>{ setActive('alarmViewBtn'); viewMode='alarm'; notesSection.style.display='block'; communitySection.style.display='none'; render(); };
+listViewBtn.onclick  = ()=>{ setActive('listViewBtn');  viewMode='list';  notesSection.style.display='block'; communitySection.style.display='none'; render(); };
+dayViewBtn.onclick   = ()=>{ setActive('dayViewBtn');   viewMode='day';   notesSection.style.display='block'; communitySection.style.display='none'; render(); };
+weekViewBtn.onclick  = ()=>{ setActive('weekViewBtn');  viewMode='week';  notesSection.style.display='block'; communitySection.style.display='none'; render(); };
+alarmViewBtn.onclick = ()=>{ setActive('alarmViewBtn'); viewMode='alarm'; notesSection.style.display='block'; communitySection.style.display='none'; render(); };
 
 // Community-tab
-document.getElementById('communityViewBtn').onclick = ()=>{
+communityBtn.onclick = ()=>{
   setActive('communityViewBtn');
   notesSection.style.display = 'none';
   communitySection.style.display = 'block';
@@ -339,11 +352,10 @@ let unsubscribeCommunity = null;
 let communityNotes = [];
 let communityFilterTag = null;
 let communityFilterAuthor = null;
-const locallyHidden = new Set(); // lokalt dolda efter flagg
+const locallyHidden = new Set();
 
 function startCommunityListener(){
   if (unsubscribeCommunity) { try{ unsubscribeCommunity(); }catch{} }
-  // ingen orderBy -> sorteras lokalt -> inga index krävs
   const qy = query(collection(db, "notes"), where("public", "==", true));
   unsubscribeCommunity = onSnapshot(qy, (snap)=>{
     const arr=[];
@@ -504,7 +516,6 @@ onAuthStateChanged(auth, async (user)=>{
     authSection.style.display = 'none';
     noteSection.style.display = 'block';
 
-    // visa rätt sektion beroende på aktiv tab
     const activeId = document.querySelector('.tab.active')?.id || 'listViewBtn';
     notesSection.style.display     = activeId === 'communityViewBtn' ? 'none'  : 'block';
     communitySection.style.display = activeId === 'communityViewBtn' ? 'block' : 'none';
