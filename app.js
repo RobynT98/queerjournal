@@ -133,7 +133,6 @@ function clearForm(){
   dateInput.value = today();
   timeInput.value = now();
 }
-
 clearBtn.onclick = (e) => { e.preventDefault(); clearForm(); contentInput.focus(); };
 
 saveBtn.onclick = async () => {
@@ -141,7 +140,7 @@ saveBtn.onclick = async () => {
   if(!user){ alert("Logga in först."); return; }
 
   try {
-    // ev. bild till data-URL
+    // ev. bild -> dataURL
     const file = imageInput.files[0];
     const imgData = file ? await new Promise(res=>{
       const r = new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file);
@@ -193,9 +192,8 @@ function startNotesListener(uid){
     arr.sort((a,b)=> (b.date + (b.time||"")).localeCompare(a.date + (a.time||"")));
     currentNotes = arr;
     render();
-  }, (err)=>{
-    console.warn("Snapshot error:", err);
-  });
+    rescheduleAll();
+  }, (err)=> console.warn("Snapshot error:", err));
 }
 
 function enterEdit(n){
@@ -211,18 +209,45 @@ function enterEdit(n){
   contentInput.focus();
 }
 
+let viewMode = "list";
+const setActive = (id) => {
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+};
+document.getElementById('listViewBtn').onclick = ()=>{ setActive('listViewBtn');  viewMode='list';  render(); };
+document.getElementById('dayViewBtn').onclick  = ()=>{ setActive('dayViewBtn');   viewMode='day';   render(); };
+document.getElementById('weekViewBtn').onclick = ()=>{ setActive('weekViewBtn');  viewMode='week';  render(); };
+document.getElementById('alarmViewBtn').onclick= ()=>{ setActive('alarmViewBtn'); viewMode='alarm'; render(); };
+
 function render(){
   if (!currentNotes.length){
     notesList.innerHTML = '<div class="empty">Inga anteckningar.</div>';
     return;
   }
+
+  let list = [...currentNotes];
+  if (viewMode === 'day'){
+    const iso = today();
+    list = list.filter(n => n.date === iso);
+  } else if (viewMode === 'week'){
+    const d = new Date();
+    const day = (d.getDay() || 7);           // 1-7 (mån-sön)
+    const mon = new Date(d); mon.setDate(d.getDate() - day + 1);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    const a = mon.toISOString().slice(0,10), b = sun.toISOString().slice(0,10);
+    list = list.filter(n => n.date >= a && n.date <= b);
+  } else if (viewMode === 'alarm'){
+    list = list.filter(n => n.alarm);
+  }
+
   notesList.innerHTML = "";
-  currentNotes.forEach(n=>{
+  list.forEach(n=>{
     const div = document.createElement('div');
     div.className = 'entry';
     const title =
       (n.mood ? `<span class="emoji">${n.mood.split(' ')[0]}</span>` : '') +
       (n.content?.split('\n')[0]?.slice(0,40) || 'Anteckning');
+
     div.innerHTML = `
       <strong>${title}</strong><br>
       <span class="muted">${n.date} ${n.time || ''} ${n.alarm ? '⏰' : ''}</span>
@@ -243,6 +268,28 @@ function render(){
   });
 }
 
+// ------------ Alarms (client) ------------
+function scheduleAlarm(note){
+  if (!note.date || !note.time) return;
+  const dt = new Date(note.date + 'T' + note.time);
+  const diff = dt.getTime() - Date.now();
+  if (diff <= 0) return;
+  setTimeout(()=> triggerAlarm(note), diff);
+}
+function triggerAlarm(note){
+  const audio = document.getElementById('alarmSound');
+  audio?.play().catch(()=>{});
+  const body = note.content || 'Dags att kolla din anteckning!';
+  if ('Notification' in window && Notification.permission === 'granted'){
+    new Notification('⏰ Alarm!', { body, icon:'./android-chrome-192x192.png' });
+  } else {
+    alert('⏰ ' + body);
+  }
+}
+function rescheduleAll(){
+  (currentNotes || []).filter(n => n.alarm).forEach(scheduleAlarm);
+}
+
 // ------------ Auth state ------------
 onAuthStateChanged(auth, async (user)=>{
   if (user){
@@ -250,6 +297,9 @@ onAuthStateChanged(auth, async (user)=>{
     noteSection.style.display = 'block';
     notesSection.style.display = 'block';
 
+    // visa logga ut-knappar + chip
+    logoutBtn.style.display = '';
+    logoutTop.style.display = '';
     userChip.style.display = '';
     userName.textContent = user.displayName || user.email || 'Inloggad';
     userPhoto.src = user.photoURL || './android-chrome-192x192.png';
@@ -260,7 +310,12 @@ onAuthStateChanged(auth, async (user)=>{
     authSection.style.display = 'block';
     noteSection.style.display = 'none';
     notesSection.style.display = 'none';
+
+    // dölj logga ut-knappar + chip
+    logoutBtn.style.display = 'none';
+    logoutTop.style.display = 'none';
     userChip.style.display = 'none';
+
     if (unsubscribe) { try{ unsubscribe(); }catch{} }
   }
 });
@@ -269,3 +324,9 @@ onAuthStateChanged(auth, async (user)=>{
 document.getElementById('darkToggle')?.addEventListener('click', ()=>{
   document.body.classList.toggle('dark');
 });
+
+// ------------ Service Worker ------------
+if ('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js', { scope: './' })
+    .catch(err => console.warn('SW fail:', err));
+}
