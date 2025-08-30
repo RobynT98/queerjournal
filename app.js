@@ -1,14 +1,18 @@
+// app.js (ES Module)
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 import {
-  getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
+  getAuth, onAuthStateChanged,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
   GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, deleteDoc, updateDoc, query, where, orderBy, serverTimestamp, onSnapshot,
+  getFirestore, collection, addDoc, deleteDoc, updateDoc,
+  query, where, orderBy, serverTimestamp, onSnapshot,
   doc, getDoc, getDocs, setDoc, enableIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-// -------- Firebase configuration --------
+// ------------ Firebase config ------------
 const firebaseConfig = {
   apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
   authDomain: "queerjournal-1cc9d.firebaseapp.com",
@@ -19,29 +23,50 @@ const firebaseConfig = {
   measurementId: "G-0T6JCFJCFZ"
 };
 
-// -------- Init --------
+// ------------ Init ------------
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
-enableIndexedDbPersistence(db).catch(() => {});
+const db   = getFirestore(app);
+enableIndexedDbPersistence(db).catch(()=>{});
 
-let messaging = null;
-try { messaging = getMessaging(app); } catch {}
+// ------------ Helpers ------------
+const today = () => new Date().toISOString().slice(0,10);
+const now   = () => new Date().toTimeString().slice(0,5);
 
-// -------- UI refs --------
-const emailEl = document.getElementById('emailInput');
-const passEl = document.getElementById('passwordInput');
-const loginBtn = document.getElementById('loginBtn');
-const registerBtn = document.getElementById('registerBtn');
-const googleBtn = document.getElementById('googleBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const logoutTop = document.getElementById('logoutTop');
-const resetBtn = document.getElementById('resetBtn');
-const noteSection = document.getElementById('noteSection');
+// ------------ UI refs ------------
+const authSection  = document.getElementById('authSection');
+const noteSection  = document.getElementById('noteSection');
 const notesSection = document.getElementById('notesSection');
-const notesList = document.getElementById('notesList');
+const notesList    = document.getElementById('notesList');
 
-// -------- Firebase Auth functions --------
+const emailEl   = document.getElementById('emailInput');
+const passEl    = document.getElementById('passwordInput');
+const loginBtn  = document.getElementById('loginBtn');
+const registerBtn = document.getElementById('registerBtn');
+const googleBtn   = document.getElementById('googleBtn');
+const logoutBtn   = document.getElementById('logoutBtn');
+const logoutTop   = document.getElementById('logoutTop');
+const resetBtn    = document.getElementById('resetBtn');
+
+const dateInput    = document.getElementById('dateInput');
+const timeInput    = document.getElementById('timeInput');
+const moodInput    = document.getElementById('moodInput');
+const tagsInput    = document.getElementById('tagsInput');
+const contentInput = document.getElementById('contentInput');
+const imageInput   = document.getElementById('imageInput');
+const alarmCheck   = document.getElementById('alarmCheck');
+
+const saveBtn  = document.getElementById('saveBtn');
+const clearBtn = document.getElementById('clearBtn');
+
+const userChip  = document.getElementById('userChip');
+const userName  = document.getElementById('userName');
+const userPhoto = document.getElementById('userPhoto');
+
+dateInput.value = today();
+timeInput.value = now();
+
+// ------------ Auth handlers ------------
 registerBtn.onclick = async () => {
   try {
     const cred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
@@ -50,9 +75,8 @@ registerBtn.onclick = async () => {
 };
 
 loginBtn.onclick = async () => {
-  try {
-    await signInWithEmailAndPassword(auth, emailEl.value, passEl.value);
-  } catch (e) { alert(e.message); }
+  try { await signInWithEmailAndPassword(auth, emailEl.value, passEl.value); }
+  catch (e) { alert(e.message); }
 };
 
 googleBtn.onclick = async () => {
@@ -69,17 +93,15 @@ logoutTop.onclick = doLogout;
 
 resetBtn.onclick = async () => {
   const email = (emailEl.value || '').trim();
-  if (!email) return alert("Skriv in din e-post först, så skickar jag en återställningslänk.");
+  if (!email) return alert("Skriv in din e-post först.");
   try {
     await sendPasswordResetEmail(auth, email);
-    alert("Återställningslänk skickad! Kolla din e-post.");
-  } catch (e) {
-    alert("Kunde inte skicka återställningslänk: " + e.message);
-  }
+    alert("Återställningslänk skickad!");
+  } catch (e) { alert("Kunde inte skicka: " + e.message); }
 };
 
-// -------- User document --------
-async function ensureUserDoc(user) {
+// ------------ User doc ------------
+async function ensureUserDoc(user){
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
   const base = {
@@ -89,73 +111,161 @@ async function ensureUserDoc(user) {
     photoURL: user.photoURL || null,
     updatedAt: serverTimestamp(),
   };
-  if (!snap.exists()) {
+  if (!snap.exists()){
     await setDoc(ref, { ...base, createdAt: serverTimestamp(), tokens: [] });
   } else {
     await setDoc(ref, base, { merge: true });
   }
 }
 
-// -------- Notes Section --------
-const saveBtn = document.getElementById('saveBtn');
-const clearBtn = document.getElementById('clearBtn');
+// ------------ Notes: create / edit / delete ------------
+let editId = null;
+let editOriginalImage = null;
+
+function clearForm(){
+  editId = null;
+  editOriginalImage = null;
+  moodInput.value = "";
+  tagsInput.value = "";
+  contentInput.value = "";
+  alarmCheck.checked = false;
+  imageInput.value = "";
+  dateInput.value = today();
+  timeInput.value = now();
+}
+
+clearBtn.onclick = (e) => { e.preventDefault(); clearForm(); contentInput.focus(); };
 
 saveBtn.onclick = async () => {
   const user = auth.currentUser;
-  if (!user) { alert("Logga in först."); return; }
+  if(!user){ alert("Logga in först."); return; }
 
   try {
+    // ev. bild till data-URL
+    const file = imageInput.files[0];
+    const imgData = file ? await new Promise(res=>{
+      const r = new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file);
+    }) : null;
+
+    const tags = (tagsInput.value||"").split(',').map(s=>s.trim()).filter(Boolean);
+
     const payload = {
       date: dateInput.value || today(),
       time: timeInput.value || now(),
       mood: moodInput.value || "",
-      tags: (tagsInput.value || "").split(',').map(s => s.trim()).filter(Boolean),
-      content: (contentInput.value || "").trim(),
-      alarm: Boolean(alarmCheck.checked),
-      createdAt: serverTimestamp(),
+      tags,
+      content: (contentInput.value||"").trim(),
+      image: imgData !== null ? imgData : editOriginalImage,
+      alarm: !!alarmCheck.checked,
+      updatedAt: serverTimestamp(),
     };
 
-    await addDoc(collection(db, "notes"), { uid: user.uid, ...payload });
+    if (editId) {
+      await updateDoc(doc(db, "notes", editId), payload);
+    } else {
+      await addDoc(collection(db, "notes"), {
+        uid: user.uid,
+        ...payload,
+        createdAt: serverTimestamp(),
+      });
+    }
     clearForm();
-  } catch (e) {
-    console.error("Save failed:", e);
+  } catch(e) {
+    console.error(e);
     alert("Kunde inte spara: " + (e.message || e.code));
   }
 };
 
-// -------- Notes rendering --------
+// ------------ Live listener & render ------------
+let unsubscribe = null;
 let currentNotes = [];
-function render() {
-  if (!currentNotes.length) {
+
+function startNotesListener(uid){
+  if (unsubscribe) { try{ unsubscribe(); }catch{} }
+  const qy = query(
+    collection(db,"notes"),
+    where("uid","==",uid),
+    orderBy("date","desc")
+  );
+  unsubscribe = onSnapshot(qy, (snap)=>{
+    const arr = [];
+    snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+    arr.sort((a,b)=> (b.date + (b.time||"")).localeCompare(a.date + (a.time||"")));
+    currentNotes = arr;
+    render();
+  }, (err)=>{
+    console.warn("Snapshot error:", err);
+  });
+}
+
+function enterEdit(n){
+  editId = n.id;
+  editOriginalImage = n.image ?? null;
+  dateInput.value = n.date || today();
+  timeInput.value = n.time || now();
+  moodInput.value = n.mood || "";
+  tagsInput.value = (n.tags || []).join(", ");
+  contentInput.value = n.content || "";
+  alarmCheck.checked = !!n.alarm;
+  imageInput.value = "";
+  contentInput.focus();
+}
+
+function render(){
+  if (!currentNotes.length){
     notesList.innerHTML = '<div class="empty">Inga anteckningar.</div>';
     return;
   }
-
-  notesList.innerHTML = '';
-  currentNotes.forEach(n => {
+  notesList.innerHTML = "";
+  currentNotes.forEach(n=>{
     const div = document.createElement('div');
     div.className = 'entry';
+    const title =
+      (n.mood ? `<span class="emoji">${n.mood.split(' ')[0]}</span>` : '') +
+      (n.content?.split('\n')[0]?.slice(0,40) || 'Anteckning');
     div.innerHTML = `
-      <strong>${n.content}</strong>
-      <p>${n.date}</p>
-      <button class="pill">Redigera</button>
-      <button class="pill">Radera</button>
+      <strong>${title}</strong><br>
+      <span class="muted">${n.date} ${n.time || ''} ${n.alarm ? '⏰' : ''}</span>
+      <p>${(n.content || '').replace(/\n/g,'<br>')}</p>
+      ${(n.tags || []).map(t=>`<span class="badge">#${t}</span>`).join(' ')}
+      ${n.image ? `<img class="thumb" src="${n.image}" alt="bild">` : ''}
+      <div style="margin-top:.5rem;display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="pill secondary editBtn">✏️ Redigera</button>
+        <button class="pill secondary delBtn">🗑 Radera</button>
+      </div>
     `;
+    div.querySelector('.editBtn').onclick = ()=> enterEdit(n);
+    div.querySelector('.delBtn').onclick = async ()=>{
+      if (!confirm("Radera den här anteckningen?")) return;
+      try{ await deleteDoc(doc(db,"notes", n.id)); }catch(e){ alert("Kunde inte radera: " + e.message); }
+    };
     notesList.appendChild(div);
   });
 }
 
-// -------- Auth state --------
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
+// ------------ Auth state ------------
+onAuthStateChanged(auth, async (user)=>{
+  if (user){
+    authSection.style.display = 'none';
     noteSection.style.display = 'block';
     notesSection.style.display = 'block';
+
+    userChip.style.display = '';
+    userName.textContent = user.displayName || user.email || 'Inloggad';
+    userPhoto.src = user.photoURL || './android-chrome-192x192.png';
+
+    await ensureUserDoc(user);
+    startNotesListener(user.uid);
   } else {
+    authSection.style.display = 'block';
     noteSection.style.display = 'none';
     notesSection.style.display = 'none';
+    userChip.style.display = 'none';
+    if (unsubscribe) { try{ unsubscribe(); }catch{} }
   }
 });
-</script>
 
-</body>
-</html>
+// ------------ Tema-knapp ------------
+document.getElementById('darkToggle')?.addEventListener('click', ()=>{
+  document.body.classList.toggle('dark');
+});
