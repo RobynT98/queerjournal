@@ -469,53 +469,61 @@ clearBtn.onclick = (e) => {e.preventDefault();clearForm();contentInput.focus(); 
         if (unsubscribe) { try { unsubscribe(); } catch {} }
       }
     });
+// -------- Spara anteckning --------
+saveBtn.onclick = async () => {
+  const user = auth.currentUser;
+  if (!user) { alert("Logga in först."); return; }
 
-    // -------- Spara anteckning --------
-    saveBtn.onclick = async () => {
-      const user = auth.currentUser;
-      if(!user){alert("Logga in först.");return;}
+  try {
+    const file = imageInput.files[0];
+    const imgData = file
+      ? await new Promise(res => {
+          const r = new FileReader();
+          r.onload = () => res(r.result);
+          r.readAsDataURL(file);
+        })
+      : null;
 
-      try{
-        const file=imageInput.files[0];
-        const imgData = await (file ? new Promise(res=>{
-          const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file);
-        }) : null);
+    const tags = (tagsInput.value || "")
+      .split(",")
+      .map(s => s.trim())
+      .filter(Boolean);
 
-        const tags = (tagsInput.value||"").split(',').map(s=>s.trim()).filter(Boolean);
+    const note = {
+      uid: user.uid,
+      date: dateInput.value || today(),
+      time: timeInput.value || now(),
+      mood: moodInput.value || "",
+      tags,
+      content: (contentInput.value || "").trim(),
+      image: imgData || null,
+      alarm: Boolean(alarmCheck.checked),
+      createdAt: serverTimestamp(),
+    };
 
-        const note = {
-          uid:user.uid,
-          date:dateInput.value || today(),
-          time:timeInput.value || now(),
-          mood:moodInput.value || "",
-          tags,
-          content:(contentInput.value||"").trim(),
-          image:imgData || null,
-          alarm:Boolean(alarmCheck.checked),
-          createdAt: serverTimestamp()
-        };
+    await addDoc(collection(db, "notes"), note);
+    clearForm();
+  } catch (e) {
+    console.error("Save failed:", e);
+    alert("Kunde inte spara: " + (e.message || e.code));
+  }
+};
 
-        await addDoc(collection(db,"notes"), note);
-        clearForm();
-      }catch(e){
-        console.error("Save failed:", e);
-        alert("Kunde inte spara: " + (e.message || e.code));
-      }
-  function clearForm(){
+// Helt separat funktion – **inte** inuti saveBtn.onclick
+function clearForm() {
   // text/val
   moodInput.value = "";
   tagsInput.value = "";
   contentInput.value = "";
   alarmCheck.checked = false;
 
-  // fil – tillåtet att sätta till tom sträng
+  // fil
   imageInput.value = "";
 
   // datum/tid tillbaka till nu
-  dateInput.value = new Date().toISOString().slice(0,10);
-  timeInput.value = new Date().toTimeString().slice(0,5);
+  dateInput.value = new Date().toISOString().slice(0, 10);
+  timeInput.value = new Date().toTimeString().slice(0, 5);
 }
-
     // Vyer & rendering
     let viewMode="list";
     const setActive=id=>{document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');};
