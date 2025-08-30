@@ -96,3 +96,7 @@ footer .tab.active{ font-weight:600; border-color:var(--brand1) }
 footer p{ margin:.1rem 0 .4rem; text-align:center; font-size:.9rem }
 footer a{ color:#4ecdc4; text-decoration:none }
 footer a:hover{ text-decoration:underline }
+.user-chip { display:inline-flex; align-items:center; gap:.45rem; }
+.user-chip img { width:28px; height:28px; border-radius:50%; object-fit:cover; }
+#communityList .entry .badge { cursor:pointer; }
+#communityList .entry .pill.secondary { opacity:.9; }
