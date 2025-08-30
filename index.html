@@ -456,7 +456,9 @@ document.getElementById("btnBlock").onclick = async () => {
         await ensureUserDoc(user);
         startNotesListener(user.uid);
         setupPush(user);
-
+// Direkt efter if(user) {
+const isBlocked = await checkBlocked(user);
+if (isBlocked) return; // avbryt uppstarten om användaren är spärrad
         // Admin?
         checkAdmin(user);
       }else{
