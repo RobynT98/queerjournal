@@ -8,8 +8,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, deleteDoc, updateDoc,
-  query, where, orderBy, serverTimestamp, onSnapshot,
-  doc, getDoc, getDocs, setDoc, enableIndexedDbPersistence, increment
+  query, where, serverTimestamp, onSnapshot,
+  doc, getDoc, setDoc, enableIndexedDbPersistence, increment
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 // ------------ Firebase config ------------
@@ -32,6 +32,16 @@ enableIndexedDbPersistence(db).catch(()=>{});
 // ------------ Helpers ------------
 const today = () => new Date().toISOString().slice(0,10);
 const now   = () => new Date().toTimeString().slice(0,5);
+
+const byNewest = (a,b) => {
+  // sortera primärt på createdAt (om finns), annars datum+tid
+  const ca = a.createdAt?.seconds ?? 0;
+  const cb = b.createdAt?.seconds ?? 0;
+  if (cb !== ca) return cb - ca;
+  const sa = (a.date||"") + (a.time||"");
+  const sb = (b.date||"") + (b.time||"");
+  return sb.localeCompare(sa);
+};
 
 // ------------ UI refs ------------
 const authSection  = document.getElementById('authSection');
@@ -73,8 +83,12 @@ const weekViewBtn   = document.getElementById('weekViewBtn');
 const alarmViewBtn  = document.getElementById('alarmViewBtn');
 const communityBtn  = document.getElementById('communityViewBtn');
 
+// defaults
 dateInput.value = today();
 timeInput.value = now();
+if ("Notification" in window && Notification.permission !== "granted") {
+  Notification.requestPermission().catch(()=>{});
+}
 
 // ------------ Auth handlers ------------
 registerBtn.onclick = async () => {
@@ -148,7 +162,7 @@ clearBtn.onclick = (e) => { e.preventDefault(); clearForm(); contentInput.focus(
 
 saveBtn.onclick = async () => {
   const user = auth.currentUser;
-  if(!user){ alert("Logga in först."); return; }
+  if (!user) { alert("Logga in först."); return; }
 
   try {
     // ev. bild -> dataURL
@@ -160,6 +174,7 @@ saveBtn.onclick = async () => {
     const tags = (tagsInput.value||"").split(',').map(s=>s.trim()).filter(Boolean);
 
     const payload = {
+      uid: user.uid,
       date: dateInput.value || today(),
       time: timeInput.value || now(),
       mood: moodInput.value || "",
@@ -168,7 +183,7 @@ saveBtn.onclick = async () => {
       image: imgData !== null ? imgData : editOriginalImage,
       alarm: !!alarmCheck.checked,
       public: !!publicCheck.checked,
-      reactions: { heart: 0, rainbow: 0, sparkles: 0 }, // init om ny
+      reactions: { heart: 0, rainbow: 0, sparkles: 0 }, // init vid ny
       flagCount: 0,
       author: {
         uid: user.uid,
@@ -179,17 +194,17 @@ saveBtn.onclick = async () => {
     };
 
     if (editId) {
+      // behåll befintliga reactions/flagCount om vi inte skickar om dem
       await updateDoc(doc(db, "notes", editId), payload);
     } else {
       await addDoc(collection(db, "notes"), {
-        uid: user.uid,
         ...payload,
         createdAt: serverTimestamp(),
       });
     }
     clearForm();
   } catch(e) {
-    console.error(e);
+    console.error("Save failed:", e);
     alert("Kunde inte spara: " + (e.message || e.code));
   }
 };
@@ -202,13 +217,13 @@ function startNotesListener(uid){
   if (unsubscribe) { try{ unsubscribe(); }catch{} }
   const qy = query(
     collection(db,"notes"),
-    where("uid","==",uid),
-    orderBy("date","desc")
+    where("uid","==",uid)
+    // medvetet ingen orderBy -> vi sorterar klientside och slipper indexkrav
   );
   unsubscribe = onSnapshot(qy, (snap)=>{
     const arr = [];
     snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
-    arr.sort((a,b)=> (b.date + (b.time||"")).localeCompare(a.date + (a.time||"")));
+    arr.sort(byNewest);
     currentNotes = arr;
     render();
     rescheduleAll();
@@ -235,13 +250,13 @@ const setActive = (id) => {
   document.getElementById(id).classList.add('active');
 };
 
-listViewBtn.onclick  = ()=>{ setActive('listViewBtn');  viewMode='list';  notesSection.style.display='block'; communitySection.style.display='none'; render(); };
-dayViewBtn.onclick   = ()=>{ setActive('dayViewBtn');   viewMode='day';   notesSection.style.display='block'; communitySection.style.display='none'; render(); };
-weekViewBtn.onclick  = ()=>{ setActive('weekViewBtn');  viewMode='week';  notesSection.style.display='block'; communitySection.style.display='none'; render(); };
-alarmViewBtn.onclick = ()=>{ setActive('alarmViewBtn'); viewMode='alarm'; notesSection.style.display='block'; communitySection.style.display='none'; render(); };
+document.getElementById('listViewBtn').onclick  = ()=>{ setActive('listViewBtn');  viewMode='list';  notesSection.style.display='block'; communitySection.style.display='none'; render(); };
+document.getElementById('dayViewBtn').onclick   = ()=>{ setActive('dayViewBtn');   viewMode='day';   notesSection.style.display='block'; communitySection.style.display='none'; render(); };
+document.getElementById('weekViewBtn').onclick  = ()=>{ setActive('weekViewBtn');  viewMode='week';  notesSection.style.display='block'; communitySection.style.display='none'; render(); };
+document.getElementById('alarmViewBtn').onclick = ()=>{ setActive('alarmViewBtn'); viewMode='alarm'; notesSection.style.display='block'; communitySection.style.display='none'; render(); };
 
 // Community-tab
-communityBtn.onclick = ()=>{
+document.getElementById('communityViewBtn').onclick = ()=>{
   setActive('communityViewBtn');
   notesSection.style.display = 'none';
   communitySection.style.display = 'block';
@@ -324,28 +339,25 @@ let unsubscribeCommunity = null;
 let communityNotes = [];
 let communityFilterTag = null;
 let communityFilterAuthor = null;
-// lokalt dolda (flaggar av mig)
-const locallyHidden = new Set();
+const locallyHidden = new Set(); // lokalt dolda efter flagg
 
 function startCommunityListener(){
   if (unsubscribeCommunity) { try{ unsubscribeCommunity(); }catch{} }
-  const qy = query(
-    collection(db, "notes"),
-    where("public", "==", true),
-    orderBy("createdAt", "desc")
-  );
+  // ingen orderBy -> sorteras lokalt -> inga index krävs
+  const qy = query(collection(db, "notes"), where("public", "==", true));
   unsubscribeCommunity = onSnapshot(qy, (snap)=>{
     const arr=[];
     snap.forEach(d=> arr.push({ id:d.id, ...d.data() }));
+    arr.sort(byNewest);
     communityNotes = arr;
     renderCommunity();
-  });
+  }, (err)=> console.warn("Community snapshot error:", err));
 }
 
 function chipHTML(author){
   const name = author?.name || "Anonym";
   const photo = author?.photo || "";
-  const initials = name?.[0]?.toUpperCase() || "A";
+  const initials = (name?.[0]||"A").toUpperCase();
   return `
     <span class="user-chip" style="cursor:pointer;display:inline-flex;align-items:center;gap:.45rem">
       ${photo ? `<img src="${photo}" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover">`
@@ -371,7 +383,6 @@ function renderCommunity(){
     return;
   }
 
-  // filterrad indikator
   const filtersActive = communityFilterTag || communityFilterAuthor;
   communityList.innerHTML = filtersActive
     ? `<div class="muted" style="margin-bottom:.5rem">
@@ -439,7 +450,6 @@ function renderCommunity(){
     communityList.appendChild(div);
   });
 
-  // Rensa filter
   const clear = document.getElementById('clearCommunityFilter');
   if (clear){
     clear.onclick = ()=>{
@@ -450,7 +460,7 @@ function renderCommunity(){
   }
 }
 
-// Reaction toggle med dedikerat subdoc per user+emoji
+// Reaction toggle (subdoc per user+emoji) + räknare i noten
 async function toggleReaction(noteId, emoji){
   const user = auth.currentUser;
   if (!user) { alert("Logga in för att reagera."); return; }
@@ -461,7 +471,6 @@ async function toggleReaction(noteId, emoji){
     const ref = doc(db, `notes/${noteId}/reactions`, `${user.uid}_${emoji}`);
     const snap = await getDoc(ref);
     if (snap.exists()){
-      // ta bort min reaktion
       await deleteDoc(ref);
       await updateDoc(doc(db,'notes',noteId), { [field]: increment(-1) });
     } else {
@@ -494,11 +503,12 @@ onAuthStateChanged(auth, async (user)=>{
   if (user){
     authSection.style.display = 'none';
     noteSection.style.display = 'block';
-    // visa sista aktiva tab (default lista)
-    notesSection.style.display = (document.querySelector('.tab.active')?.id === 'communityViewBtn') ? 'none' : 'block';
-    communitySection.style.display = (document.querySelector('.tab.active')?.id === 'communityViewBtn') ? 'block' : 'none';
 
-    // visa logga ut + chip
+    // visa rätt sektion beroende på aktiv tab
+    const activeId = document.querySelector('.tab.active')?.id || 'listViewBtn';
+    notesSection.style.display     = activeId === 'communityViewBtn' ? 'none'  : 'block';
+    communitySection.style.display = activeId === 'communityViewBtn' ? 'block' : 'none';
+
     logoutBtn.style.display = '';
     logoutTop.style.display = '';
     userChip.style.display = '';
