@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
+  <script>
+if ('serviceWorker' in navigator) {
+  // relativt från /queerjournal/index.html
+  navigator.serviceWorker
+    .register('./sw.js', { scope: './' })
+    .then(reg => console.log('SW OK:', reg.scope))
+    .catch(err => console.warn('SW fail:', err));
+}
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Queer Journal</title>
@@ -449,18 +458,6 @@
 
     // Tema
     document.getElementById('darkToggle').onclick=()=> document.body.classList.toggle('dark');
-  </script>
-
-  <!-- Service worker -->
-  <script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker
-        .register("./sw.js", { scope: "./" })
-        .then(reg => console.log("✅ Service Worker registrerad med scope:", reg.scope))
-        .catch(err => console.warn("⚠️ SW error:", err));
-    });
-  }
   </script>
 </body>
 </html>
