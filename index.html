@@ -171,14 +171,15 @@
       signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
       GoogleAuthProvider, signInWithPopup
     } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import {
-      getFirestore, collection, addDoc, query, where, orderBy,
-      serverTimestamp, onSnapshot, doc, getDoc, setDoc,
-      enableIndexedDbPersistence
+    import { getFirestore, collection, addDoc, query, where, orderBy,
+  serverTimestamp, onSnapshot, doc, getDoc, getDocs, setDoc,
+  enableIndexedDbPersistence
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
     } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
     import {
       getMessaging, getToken, onMessage
     } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging.js";
+    
 
     // ---------------- Config ----------------
     const firebaseConfig = {
@@ -330,6 +331,91 @@
       adminOut.textContent = "";
       return false;
     }
+    // --- Adminhjälp ---
+// Hitta mål-uid via email genom users-kollektionen
+async function findUidByEmail(email) {
+  const q = query(collection(db, "users"), where("email", "==", email));
+  const s = await getDocs(q);
+  if (s.empty) return null;
+  // tar första träffen
+  return s.docs[0].id || s.docs[0].data().uid;
+}
+
+// Skicka varning (skapar ett dokument i /warnings)
+async function sendWarning(targetUid, reason) {
+  const admin = auth.currentUser;
+  await addDoc(collection(db, "warnings"), {
+    targetUid,
+    reason: reason || null,
+    by: admin?.uid || null,
+    at: serverTimestamp()
+  });
+}
+
+// Blockera användare (skriver/mergar i /blocks/{uid})
+async function blockUser(targetUid, reason) {
+  const admin = auth.currentUser;
+  await setDoc(doc(db, "blocks", targetUid), {
+    blocked: true,
+    reason: reason || null,
+    by: admin?.uid || null,
+    at: serverTimestamp()
+  }, { merge: true });
+}
+
+// Kolla om inloggad användare är blockerad – signa ut direkt i så fall
+async function checkBlocked(user) {
+  try {
+    const snap = await getDoc(doc(db, "blocks", user.uid));
+    if (snap.exists() && snap.data()?.blocked) {
+      alert("Ditt konto är blockerat. Kontakta support om du tror detta är fel.");
+      await signOut(auth);
+      return true;
+    }
+  } catch(e) { console.warn("Block check failed:", e); }
+  return false;
+}
+
+// Knyt knapparna (syns bara för superadmin redan)
+document.getElementById("btnWarn").onclick = async () => {
+  const emailOrUid = prompt("Vem vill du varna? Ange email eller uid:");
+  if (!emailOrUid) return;
+  const reason = prompt("Ange orsak (valfritt):") || "";
+
+  let targetUid = emailOrUid.trim();
+  if (!targetUid.includes(":") && targetUid.includes("@")) {
+    const found = await findUidByEmail(targetUid);
+    if (!found) return alert("Hittar ingen användare med den e-posten.");
+    targetUid = found;
+  }
+  try {
+    await sendWarning(targetUid, reason);
+    adminOut.textContent = `Varning skickad till ${targetUid}`;
+  } catch(e) {
+    alert("Kunde inte skicka varning: " + e.message);
+  }
+};
+
+document.getElementById("btnBlock").onclick = async () => {
+  const emailOrUid = prompt("Vilken användare ska blockeras? Ange email eller uid:");
+  if (!emailOrUid) return;
+  const reason = prompt("Orsak till blockering (valfritt):") || "";
+
+  let targetUid = emailOrUid.trim();
+  if (!targetUid.includes(":") && targetUid.includes("@")) {
+    const found = await findUidByEmail(targetUid);
+    if (!found) return alert("Hittar ingen användare med den e-posten.");
+    targetUid = found;
+  }
+  if (!confirm(`Blockera användare ${targetUid}?`)) return;
+
+  try {
+    await blockUser(targetUid, reason);
+    adminOut.textContent = `Användare blockerad: ${targetUid}`;
+  } catch(e) {
+    alert("Kunde inte blockera: " + e.message);
+  }
+};
 
     // ---------------- Live-lyssning på anteckningar (per user) ----------------
     let unsubscribe = null;
