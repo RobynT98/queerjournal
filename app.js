@@ -1,5 +1,6 @@
 // app.js (ES Module)
 
+// ---------- Firebase imports ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 import {
   getAuth, onAuthStateChanged,
@@ -9,10 +10,11 @@ import {
 import {
   getFirestore, collection, addDoc, deleteDoc, updateDoc,
   query, where, serverTimestamp, onSnapshot,
-  doc, getDoc, setDoc, enableIndexedDbPersistence, increment
+  doc, getDoc, setDoc, enableIndexedDbPersistence, increment,
+  getDocs, orderBy
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-// ------------ Firebase config ------------
+// ---------- Firebase config ----------
 const firebaseConfig = {
   apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
   authDomain: "queerjournal-1cc9d.firebaseapp.com",
@@ -23,15 +25,16 @@ const firebaseConfig = {
   measurementId: "G-0T6JCFJCFZ"
 };
 
-// ------------ Init ------------
+// ---------- Init ----------
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 enableIndexedDbPersistence(db).catch(()=>{});
 
-// ------------ Helpers ------------
+// ---------- Helpers ----------
 const today = () => new Date().toISOString().slice(0,10);
 const now   = () => new Date().toTimeString().slice(0,5);
+
 const byNewest = (a,b) => {
   const ca = a.createdAt?.seconds ?? 0;
   const cb = b.createdAt?.seconds ?? 0;
@@ -41,7 +44,7 @@ const byNewest = (a,b) => {
   return sb.localeCompare(sa);
 };
 
-// ------------ UI refs ------------
+// ---------- UI refs ----------
 const authSection  = document.getElementById('authSection');
 const noteSection  = document.getElementById('noteSection');
 const notesSection = document.getElementById('notesSection');
@@ -72,23 +75,41 @@ const userChip  = document.getElementById('userChip');
 const userName  = document.getElementById('userName');
 const userPhoto = document.getElementById('userPhoto');
 
-const communitySection = document.getElementById('communitySection');
-const communityList    = document.getElementById('communityList');
-
+// Footer tabs
 const listViewBtn   = document.getElementById('listViewBtn');
 const dayViewBtn    = document.getElementById('dayViewBtn');
 const weekViewBtn   = document.getElementById('weekViewBtn');
 const alarmViewBtn  = document.getElementById('alarmViewBtn');
 const communityBtn  = document.getElementById('communityViewBtn');
 
-// defaults
-dateInput.value = today();
-timeInput.value = now();
+// Community
+const communitySection = document.getElementById('communitySection');
+const communityList    = document.getElementById('communityList');
+
+// Profil (frivilliga – koden garderas om de saknas)
+const editProfileBtn      = document.getElementById('editProfileBtn');
+const profileEditSection  = document.getElementById('profileEditSection');
+const profDisplayName     = document.getElementById('profDisplayName');
+const profPronouns        = document.getElementById('profPronouns');
+const profBio             = document.getElementById('profBio');
+const profTags            = document.getElementById('profTags');
+const saveProfileBtn      = document.getElementById('saveProfileBtn');
+const cancelProfileBtn    = document.getElementById('cancelProfileBtn');
+
+const profileViewSection  = document.getElementById('profileViewSection');
+const profileViewHeader   = document.getElementById('profileViewHeader');
+const profileViewMeta     = document.getElementById('profileViewMeta');
+const profileViewPosts    = document.getElementById('profileViewPosts');
+const closeProfileViewBtn = document.getElementById('closeProfileViewBtn');
+
+// Defaults och notiser
+if (dateInput) dateInput.value = today();
+if (timeInput) timeInput.value = now();
 if ("Notification" in window && Notification.permission !== "granted") {
   Notification.requestPermission().catch(()=>{});
 }
 
-// ------------ Auth handlers ------------
+// ---------- Auth handlers ----------
 registerBtn.onclick = async () => {
   try {
     const cred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
@@ -122,10 +143,11 @@ resetBtn.onclick = async () => {
   } catch (e) { alert("Kunde inte skicka: " + e.message); }
 };
 
-// ------------ User doc ------------
+// ---------- User doc ----------
 async function ensureUserDoc(user){
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
+
   const fallbackName = user.displayName || (user.email ? user.email.split('@')[0] : 'Användare');
 
   if (!snap.exists()){
@@ -155,23 +177,23 @@ async function ensureUserDoc(user){
   }
 }
 
-// ------------ Notes: create / edit / delete ------------
+// ---------- Anteckningar: skapa / redigera / radera ----------
 let editId = null;
 let editOriginalImage = null;
 
 function clearForm(){
   editId = null;
   editOriginalImage = null;
-  moodInput.value = "";
-  tagsInput.value = "";
-  contentInput.value = "";
-  alarmCheck.checked = false;
-  publicCheck.checked = false;
-  imageInput.value = "";
-  dateInput.value = today();
-  timeInput.value = now();
+  if (moodInput)   moodInput.value = "";
+  if (tagsInput)   tagsInput.value = "";
+  if (contentInput)contentInput.value = "";
+  if (alarmCheck)  alarmCheck.checked = false;
+  if (publicCheck) publicCheck.checked = false;
+  if (imageInput)  imageInput.value = "";
+  if (dateInput)   dateInput.value = today();
+  if (timeInput)   timeInput.value = now();
 }
-clearBtn.onclick = (e) => { e.preventDefault(); clearForm(); contentInput.focus(); };
+clearBtn.onclick = (e) => { e.preventDefault(); clearForm(); contentInput?.focus(); };
 
 saveBtn.onclick = async () => {
   const user = auth.currentUser;
@@ -179,25 +201,24 @@ saveBtn.onclick = async () => {
 
   try {
     // ev. bild -> dataURL
-    const file = imageInput.files[0];
+    const file = imageInput?.files?.[0];
     const imgData = file ? await new Promise(res=>{
       const r = new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file);
     }) : null;
 
-    const tags = (tagsInput.value||"").split(',').map(s=>s.trim()).filter(Boolean);
-
+    const tags = (tagsInput?.value||"").split(',').map(s=>s.trim()).filter(Boolean);
     const profile = await ensureUserDoc(user);
 
     const payload = {
       uid: user.uid,
-      date: dateInput.value || today(),
-      time: timeInput.value || now(),
-      mood: moodInput.value || "",
+      date: dateInput?.value || today(),
+      time: timeInput?.value || now(),
+      mood: moodInput?.value || "",
       tags,
-      content: (contentInput.value||"").trim(),
+      content: (contentInput?.value||"").trim(),
       image: imgData !== null ? imgData : editOriginalImage,
-      alarm: !!alarmCheck.checked,
-      public: !!publicCheck.checked,
+      alarm: !!(alarmCheck && alarmCheck.checked),
+      public: !!(publicCheck && publicCheck.checked),
       reactions: { heart: 0, rainbow: 0, sparkles: 0 },
       flagCount: 0,
       author: {
@@ -223,16 +244,13 @@ saveBtn.onclick = async () => {
   }
 };
 
-// ------------ Private list: live listener & render ------------
+// ---------- Privat lista: live lyssning & render ----------
 let unsubscribe = null;
 let currentNotes = [];
 
 function startNotesListener(uid){
   if (unsubscribe) { try{ unsubscribe(); }catch{} }
-  const qy = query(
-    collection(db,"notes"),
-    where("uid","==",uid)
-  );
+  const qy = query(collection(db,"notes"), where("uid","==",uid));
   unsubscribe = onSnapshot(qy, (snap)=>{
     const arr = [];
     snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
@@ -246,37 +264,38 @@ function startNotesListener(uid){
 function enterEdit(n){
   editId = n.id;
   editOriginalImage = n.image ?? null;
-  dateInput.value = n.date || today();
-  timeInput.value = n.time || now();
-  moodInput.value = n.mood || "";
-  tagsInput.value = (n.tags || []).join(", ");
-  contentInput.value = n.content || "";
-  alarmCheck.checked = !!n.alarm;
-  publicCheck.checked = !!n.public;
-  imageInput.value = "";
-  contentInput.focus();
+  if (dateInput)    dateInput.value = n.date || today();
+  if (timeInput)    timeInput.value = n.time || now();
+  if (moodInput)    moodInput.value = n.mood || "";
+  if (tagsInput)    tagsInput.value = (n.tags || []).join(", ");
+  if (contentInput) contentInput.value = n.content || "";
+  if (alarmCheck)   alarmCheck.checked = !!n.alarm;
+  if (publicCheck)  publicCheck.checked = !!n.public;
+  if (imageInput)   imageInput.value = "";
+  contentInput?.focus();
 }
 
 let viewMode = "list";
 const setActive = (id) => {
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.getElementById(id)?.classList.add('active');
 };
 
-listViewBtn.onclick  = ()=>{ setActive('listViewBtn');  viewMode='list';  notesSection.style.display='block'; communitySection.style.display='none'; render(); };
-dayViewBtn.onclick   = ()=>{ setActive('dayViewBtn');   viewMode='day';   notesSection.style.display='block'; communitySection.style.display='none'; render(); };
-weekViewBtn.onclick  = ()=>{ setActive('weekViewBtn');  viewMode='week';  notesSection.style.display='block'; communitySection.style.display='none'; render(); };
-alarmViewBtn.onclick = ()=>{ setActive('alarmViewBtn'); viewMode='alarm'; notesSection.style.display='block'; communitySection.style.display='none'; render(); };
+listViewBtn.onclick  = ()=>{ setActive('listViewBtn');  viewMode='list';  notesSection.style.display='block'; communitySection?.style && (communitySection.style.display='none'); render(); };
+dayViewBtn.onclick   = ()=>{ setActive('dayViewBtn');   viewMode='day';   notesSection.style.display='block'; communitySection?.style && (communitySection.style.display='none'); render(); };
+weekViewBtn.onclick  = ()=>{ setActive('weekViewBtn');  viewMode='week';  notesSection.style.display='block'; communitySection?.style && (communitySection.style.display='none'); render(); };
+alarmViewBtn.onclick = ()=>{ setActive('alarmViewBtn'); viewMode='alarm'; notesSection.style.display='block'; communitySection?.style && (communitySection.style.display='none'); render(); };
 
 // Community-tab
 communityBtn.onclick = ()=>{
   setActive('communityViewBtn');
   notesSection.style.display = 'none';
-  communitySection.style.display = 'block';
+  communitySection && (communitySection.style.display = 'block');
   renderCommunity();
 };
 
 function render(){
+  if (!notesList) return;
   if (!currentNotes.length){
     notesList.innerHTML = '<div class="empty">Inga anteckningar.</div>';
     return;
@@ -325,7 +344,7 @@ function render(){
   });
 }
 
-// ------------ Alarms (client) ------------
+// ---------- Alarm (klientside) ----------
 function scheduleAlarm(note){
   if (!note.date || !note.time) return;
   const dt = new Date(note.date + 'T' + note.time);
@@ -347,7 +366,7 @@ function rescheduleAll(){
   (currentNotes || []).filter(n => n.alarm).forEach(scheduleAlarm);
 }
 
-// ------------ COMMUNITY: live feed, filters, reactions, flag ------------
+// ---------- COMMUNITY: live feed, filter, reactions, flag ----------
 let unsubscribeCommunity = null;
 let communityNotes = [];
 let communityFilterTag = null;
@@ -355,11 +374,11 @@ let communityFilterAuthor = null;
 const locallyHidden = new Set();
 
 function startCommunityListener(){
+  if (!communitySection) return; // inget community i HTML
   if (unsubscribeCommunity) { try{ unsubscribeCommunity(); }catch{} }
   const qy = query(collection(db, "notes"), where("public", "==", true));
   unsubscribeCommunity = onSnapshot(qy, (snap)=>{
-    const arr=[];
-    snap.forEach(d=> arr.push({ id:d.id, ...d.data() }));
+    const arr=[]; snap.forEach(d=> arr.push({ id:d.id, ...d.data() }));
     arr.sort(byNewest);
     communityNotes = arr;
     renderCommunity();
@@ -380,7 +399,8 @@ function chipHTML(author){
 }
 
 function renderCommunity(){
-  if (!communitySection) return;
+  if (!communitySection || !communityList) return;
+
   let list = communityNotes.filter(n => !locallyHidden.has(n.id));
 
   if (communityFilterTag){
@@ -429,18 +449,12 @@ function renderCommunity(){
       </div>
     `;
 
-    // profilchip klick => filter på författare
+    // profilchip klick — öppna profilvy
     div.querySelector('.author-chip')?.addEventListener('click', ()=>{
-      if (n.author?.uid){
-        communityFilterAuthor = n.author.uid;
-        communityFilterTag = null;
-        setActive('communityViewBtn');
-        notesSection.style.display='none'; communitySection.style.display='block';
-        renderCommunity();
-      }
+      if (n.author?.uid){ openProfileView(n.author.uid); }
     });
 
-    // taggar klick => filter på tag
+    // taggfilter
     div.querySelectorAll('.tagBtn').forEach(el=>{
       el.onclick = ()=>{
         communityFilterTag = el.dataset.tag;
@@ -510,7 +524,136 @@ async function flagNote(noteId){
   }
 }
 
-// ------------ Auth state ------------
+// ---------- Profil: helpers (visning/dölj, egna/andras) ----------
+function hideAllPanels(){
+  // bas
+  notesSection.style.display = 'none';
+  communitySection && (communitySection.style.display = 'none');
+  // profil
+  profileEditSection && (profileEditSection.style.display = 'none');
+  profileViewSection && (profileViewSection.style.display = 'none');
+}
+
+function openMyProfileEditor(userData){
+  if (!profileEditSection) return;
+  hideAllPanels();
+  profileEditSection.style.display = 'block';
+  if (profDisplayName) profDisplayName.value = userData.displayName || '';
+  if (profPronouns)    profPronouns.value    = userData.pronouns || '';
+  if (profBio)         profBio.value         = userData.bio || '';
+  if (profTags)        profTags.value        = (userData.tags || []).join(', ');
+}
+
+async function openProfileView(uid){
+  if (!profileViewSection) return;
+  hideAllPanels();
+  profileViewSection.style.display = 'block';
+
+  // hämta profil
+  const uSnap = await getDoc(doc(db,'users', uid));
+  const u = uSnap.exists() ? uSnap.data() : { displayName:'Anonym', pronouns:'', bio:'', tags:[] };
+
+  // header
+  const initials = (u.displayName?.[0] || 'A').toUpperCase();
+  const chip = u.photoURL
+    ? `<img src="${u.photoURL}" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover">`
+    : `<span style="width:40px;height:40px;border-radius:50%;display:inline-grid;place-items:center;background:#555;color:#fff;font-weight:600">${initials}</span>`;
+
+  if (profileViewHeader) {
+    profileViewHeader.innerHTML = `
+      ${chip}
+      <div>
+        <div style="font-weight:600">${u.displayName || 'Anonym'}</div>
+        <div class="muted">${u.pronouns || ''}</div>
+      </div>
+    `;
+  }
+  if (profileViewMeta) {
+    profileViewMeta.innerHTML = `
+      ${u.bio ? `<div style="margin:.25rem 0">${u.bio}</div>` : ''}
+      ${(u.tags||[]).map(t=>`<span class="badge">#${t}</span>`).join(' ')}
+    `;
+  }
+
+  // hämta användarens publika inlägg
+  const qy = query(
+    collection(db,'notes'),
+    where('public','==', true),
+    where('uid','==', uid),
+    orderBy('createdAt','desc')
+  );
+  const s = await getDocs(qy);
+
+  if (profileViewPosts){
+    if (s.empty){
+      profileViewPosts.innerHTML = '<div class="empty">Inga publika inlägg ännu.</div>';
+    } else {
+      profileViewPosts.innerHTML = '';
+      s.forEach(d=>{
+        const n = d.data();
+        const div = document.createElement('div');
+        div.className = 'entry';
+        div.innerHTML = `
+          <span class="muted">${n.date || ''} ${n.time || ''}</span>
+          <p>${(n.content||'').replace(/\n/g,'<br>')}</p>
+          ${(n.tags||[]).map(t=>`<span class="badge">#${t}</span>`).join(' ')}
+          ${n.image ? `<img class="thumb" src="${n.image}" alt="bild">` : ''}
+        `;
+        profileViewPosts.appendChild(div);
+      });
+    }
+  }
+}
+
+// ---------- Profil: events ----------
+if (editProfileBtn){
+  editProfileBtn.onclick = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    const snap = await getDoc(doc(db,'users',user.uid));
+    openMyProfileEditor(snap.exists() ? snap.data() : {});
+  };
+}
+if (userChip){ userChip.onclick = () => editProfileBtn?.onclick?.(); }
+
+if (saveProfileBtn){
+  saveProfileBtn.onclick = async () => {
+    const user = auth.currentUser; if (!user) return;
+    const payload = {
+      displayName: (profDisplayName?.value || '').trim() || null,
+      pronouns: (profPronouns?.value || '').trim(),
+      bio: (profBio?.value || '').trim(),
+      tags: (profTags?.value || '').split(',').map(s=>s.trim()).filter(Boolean),
+      updatedAt: serverTimestamp(),
+    };
+    try{
+      await setDoc(doc(db,'users',user.uid), payload, { merge:true });
+      alert('Profil sparad!');
+      hideAllPanels();
+      const activeId = document.querySelector('.tab.active')?.id || 'listViewBtn';
+      if (activeId === 'communityViewBtn'){ communitySection && (communitySection.style.display='block'); }
+      else { notesSection.style.display='block'; }
+    }catch(e){ alert('Kunde inte spara profil: ' + e.message); }
+  };
+}
+
+if (cancelProfileBtn){
+  cancelProfileBtn.onclick = () => {
+    hideAllPanels();
+    const activeId = document.querySelector('.tab.active')?.id || 'listViewBtn';
+    if (activeId === 'communityViewBtn'){ communitySection && (communitySection.style.display='block'); }
+    else { notesSection.style.display='block'; }
+  };
+}
+
+if (closeProfileViewBtn){
+  closeProfileViewBtn.onclick = () => {
+    hideAllPanels();
+    communitySection && (communitySection.style.display='block');
+  };
+}
+
+// ---------- Auth state ----------
 onAuthStateChanged(auth, async (user)=>{
   if (user){
     authSection.style.display = 'none';
@@ -518,13 +661,15 @@ onAuthStateChanged(auth, async (user)=>{
 
     const activeId = document.querySelector('.tab.active')?.id || 'listViewBtn';
     notesSection.style.display     = activeId === 'communityViewBtn' ? 'none'  : 'block';
-    communitySection.style.display = activeId === 'communityViewBtn' ? 'block' : 'none';
+    communitySection && (communitySection.style.display = activeId === 'communityViewBtn' ? 'block' : 'none');
 
     logoutBtn.style.display = '';
     logoutTop.style.display = '';
     userChip.style.display = '';
     userName.textContent = user.displayName || user.email || 'Inloggad';
     userPhoto.src = user.photoURL || './android-chrome-192x192.png';
+
+    editProfileBtn && (editProfileBtn.style.display = '');
 
     await ensureUserDoc(user);
     startNotesListener(user.uid);
@@ -533,23 +678,24 @@ onAuthStateChanged(auth, async (user)=>{
     authSection.style.display = 'block';
     noteSection.style.display = 'none';
     notesSection.style.display = 'none';
-    communitySection.style.display = 'none';
+    communitySection && (communitySection.style.display = 'none');
 
     logoutBtn.style.display = 'none';
     logoutTop.style.display = 'none';
     userChip.style.display = 'none';
+    editProfileBtn && (editProfileBtn.style.display = 'none');
 
     if (unsubscribe) { try{ unsubscribe(); }catch{} }
     if (unsubscribeCommunity) { try{ unsubscribeCommunity(); }catch{} }
   }
 });
 
-// ------------ Tema-knapp ------------
+// ---------- Tema-knapp ----------
 document.getElementById('darkToggle')?.addEventListener('click', ()=>{
   document.body.classList.toggle('dark');
 });
 
-// ------------ Service Worker ------------
+// ---------- Service Worker ----------
 if ('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js', { scope: './' })
     .catch(err => console.warn('SW fail:', err));
