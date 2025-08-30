@@ -37,3 +37,17 @@ Vill du köra lokalt?
 ```bash
 git clone https://github.com/RobynT98/queerjournal.git
 cd queerjournal
+---
+
+## 📜 Licens & bidrag
+
+Detta projekt är släppt under [MIT License](LICENSE) för den öppna versionen.  
+Det betyder att du fritt kan använda, ändra och sprida appen så länge du anger originalet.
+
+⚠️ **Viktigt för bidragsgivare:**  
+Genom att bidra till projektet accepterar du vår [Contributor License Agreement (CLA)](CONTRIBUTOR_LICENSE_AGREEMENT.md).  
+Det innebär att projektägaren **Conri Turesson** har rätt att i framtiden:
+- ändra licens för nya versioner,
+- skapa premium- eller kommersiella varianter av appen.
+
+Ditt bidrag till den öppna versionen kommer alltid att förbli MIT-licensierat.
