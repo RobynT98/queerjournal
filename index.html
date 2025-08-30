@@ -1,29 +1,45 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
+  <!-- =========================
+       1) BAS & SEO
+  ========================== -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Queer Journal</title>
+  <meta name="description" content="Queer Journal – privat dagbok + community. HBTQ+ och NPF-vänligt.">
 
-  <!-- PWA -->
+  <!-- Open Graph (för delningar i sociala medier) -->
+  <meta property="og:title" content="Queer Journal">
+  <meta property="og:description" content="Privat dagbok + community i din webbläsare.">
+  <meta property="og:image" content="https://robynt98.github.io/queerjournal/android-chrome-512x512.png">
+  <meta property="og:type" content="website">
+
+  <!-- =========================
+       2) PWA / APP-IKONER
+  ========================== -->
   <link rel="manifest" href="./manifest.webmanifest" />
   <meta name="theme-color" content="#d53369" />
-
-  <!-- Ikoner -->
   <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
   <link rel="icon" sizes="32x32" href="./favicon-32x32.png" />
   <link rel="icon" sizes="16x16" href="./favicon-16x16.png" />
 
-  <!-- Font & CSS -->
+  <!-- =========================
+       3) TYPSNITT & STIL
+       (ändra i styles.css – inte här)
+  ========================== -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+  <!-- Rensa ev. gammalt PIN-lås från äldre versioner -->
   <script>
-    /* Städa gammalt PIN-lås från äldre versioner */
     try { ['qj.pin','qj.salt','qj.attempts'].forEach(k => localStorage.removeItem(k)); } catch {}
   </script>
 
+  <!-- =========================
+       4) HEADER
+  ========================== -->
   <header>
     <h1>🌈 Queer Journal</h1>
     <div class="actions">
@@ -36,8 +52,11 @@
     </div>
   </header>
 
+  <!-- =========================
+       5) HUVUDINNEHÅLL
+  ========================== -->
   <main>
-    <!-- AUTH -->
+    <!-- 5.1 AUTENTISERING -->
     <section id="authSection" class="card">
       <h2>Logga in / Skapa konto</h2>
       <input id="emailInput" type="email" placeholder="E-post" />
@@ -53,7 +72,7 @@
       </div>
     </section>
 
-    <!-- NY ANTECKNING -->
+    <!-- 5.2 NY ANTECKNING -->
     <section id="noteSection" class="card" style="display:none">
       <h2>Ny anteckning</h2>
 
@@ -93,7 +112,7 @@
           <input id="imageInput" type="file" accept="image/*" />
         </label>
 
-        <!-- Community-delning -->
+        <!-- Delning till community -->
         <label style="display:inline-flex; align-items:center; gap:.5rem; margin-top:.5rem">
           <input id="publicCheck" type="checkbox">
           🌍 Dela i community
@@ -106,19 +125,22 @@
       </div>
     </section>
 
-    <!-- MINA ANTECKNINGAR -->
+    <!-- 5.3 MINA ANTECKNINGAR -->
     <section id="notesSection" class="card" style="display:none">
       <h2>Mina anteckningar</h2>
       <div id="notesList" class="empty">Inga anteckningar ännu.</div>
     </section>
 
-    <!-- COMMUNITY -->
+    <!-- 5.4 COMMUNITY -->
     <section id="communitySection" class="card" style="display:none">
       <h2>Community</h2>
       <div id="communityList" class="empty">Inga delade inlägg ännu.</div>
     </section>
   </main>
 
+  <!-- =========================
+       6) FOOTER & NAV
+  ========================== -->
   <footer>
     <div class="tabs">
       <button id="listViewBtn"  class="tab active">Lista</button>
@@ -135,33 +157,38 @@
     <p>© 2025 Queer Journal</p>
   </footer>
 
-  <!-- Alarm-ljud -->
+  <!-- =========================
+       7) LJUDFILER (ALARM)
+  ========================== -->
   <audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
-  <!-- App-logik -->
+  <!-- =========================
+       8) HUVUDSCRIPT
+       (All logik i app.js)
+  ========================== -->
   <script type="module" src="./app.js"></script>
-</body>
-<!-- Cookiebanner -->
-<div id="cookie-banner" 
-     style="position:fixed;bottom:0;left:0;right:0;
-            background:#222;color:#fff;
-            padding:10px;text-align:center;
-            display:none;z-index:9999">
-  Vi använder cookies för att förbättra din upplevelse.
-  <a href="COOKIES.md" style="color:#4ecdc4">Läs mer</a>
-  <button onclick="acceptCookies()" style="margin-left:10px">OK</button>
-</div>
 
-<script>
-function acceptCookies(){
-  localStorage.setItem("cookiesAccepted","true");
-  document.getElementById("cookie-banner").style.display="none";
-}
-window.addEventListener("load", ()=>{
-  if(!localStorage.getItem("cookiesAccepted")){
-    document.getElementById("cookie-banner").style.display="block";
-  }
-});
-</script>
-</div>
+  <!-- =========================
+       9) COOKIE-BANNER
+  ========================== -->
+  <div id="cookie-banner"
+       style="position:fixed;bottom:0;left:0;right:0;background:#222;color:#fff;
+              padding:10px;text-align:center;display:none;z-index:9999">
+    Vi använder cookies för att förbättra din upplevelse.
+    <a href="COOKIES.md" style="color:#4ecdc4">Läs mer</a>
+    <button onclick="acceptCookies()" style="margin-left:10px">OK</button>
+  </div>
+
+  <script>
+    function acceptCookies(){
+      localStorage.setItem("cookiesAccepted","true");
+      document.getElementById("cookie-banner").style.display="none";
+    }
+    window.addEventListener("load", ()=>{
+      if(!localStorage.getItem("cookiesAccepted")){
+        document.getElementById("cookie-banner").style.display="block";
+      }
+    });
+  </script>
+</body>
 </html>
