@@ -1,17 +1,57 @@
-      {
+{
   "name": "Queer Journal",
   "short_name": "QJournal",
-  "id": "/queerjournal/",
-  "start_url": "/queerjournal/",
+  "description": "En privat dagboksapp för HBTQ+-personer där anteckningar sparas säkert i molnet och synkas mellan enheter.",
+  "start_url": "/queerjournal/index.html",
   "scope": "/queerjournal/",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#d53369",
+  "orientation": "portrait",
   "icons": [
-    { "src": "/queerjournal/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/queerjournal/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/queerjournal/apple-touch-icon.png",       "sizes": "180x180", "type": "image/png" },
-    { "src": "/queerjournal/favicon-32x32.png",          "sizes": "32x32",  "type": "image/png" },
-    { "src": "/queerjournal/favicon-16x16.png",          "sizes": "16x16",  "type": "image/png" }
-  ]
+    {
+      "src": "android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshot1.png",
+      "sizes": "691x1536",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Inloggningsskärm i ljust läge"
+    },
+    {
+      "src": "screenshot2.png",
+      "sizes": "691x1536",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Inloggningsskärm i mörkt läge"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  }
 }
