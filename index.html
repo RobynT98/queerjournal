@@ -93,7 +93,6 @@ header .actions{display:flex;align-items:center;gap:.5rem}
       <img id="userPhoto" alt="">
       <small id="userName"></small>
     </div>
-
     <button id="logoutTop" class="toggle-dark" title="Logga ut" style="display:none">🚪 Logga ut</button>
     <button id="darkToggle" class="toggle-dark" title="Byt tema">🌓</button>
   </div>
@@ -254,18 +253,22 @@ const clearBtn=document.getElementById('clearBtn');
 const logoutTop = document.getElementById('logoutTop');
 const resetBtn  = document.getElementById('resetBtn');
 
-// Handlers
+// ========= Handlers =========
 registerBtn.onclick = async () => {
   try {
     const cred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
     await ensureUserDoc(cred.user);
-  } catch (e) { alert(e.message); }
+  } catch (e) {
+    alert(e.message);
+  }
 };
 
 loginBtn.onclick = async () => {
   try {
     await signInWithEmailAndPassword(auth, emailEl.value, passEl.value);
-  } catch (e) { alert(e.message); }
+  } catch (e) {
+    alert(e.message);
+  }
 };
 
 googleBtn.onclick = async () => {
@@ -273,7 +276,9 @@ googleBtn.onclick = async () => {
     const provider = new GoogleAuthProvider();
     const res = await signInWithPopup(auth, provider);
     await ensureUserDoc(res.user);
-  } catch (e) { alert(e.message); }
+  } catch (e) {
+    alert(e.message);
+  }
 };
 
 // Logga ut (båda knapparna)
@@ -283,47 +288,16 @@ logoutTop.onclick  = () => signOut(auth);
 // Glömt lösenord
 resetBtn.onclick = async () => {
   const email = (emailEl.value || '').trim();
-  if (!email) return alert("Skriv in din e-post först, så skickar jag en återställningslänk.");
+  if (!email) {
+    return alert("Skriv in din e-post först, så skickar jag en återställningslänk.");
+  }
   try {
     await sendPasswordResetEmail(auth, email);
     alert("Återställningslänk skickad! Kolla din e-post.");
   } catch (e) {
     alert("Kunde inte skicka återställningslänk: " + e.message);
   }
-};    // Helpers
-    const today=()=> new Date().toISOString().slice(0,10);
-    const now=()=> new Date().toTimeString().slice(0,5);
-    dateInput.value=today(); timeInput.value=now();
-
-    if ("Notification" in window && Notification.permission!=="granted"){
-      Notification.requestPermission();
-    }
-
-    const CACHE_KEY="qj.cached.notes.v2";
-    const cacheSet=(arr)=>localStorage.setItem(CACHE_KEY,JSON.stringify(arr));
-    const cacheGet=()=>{try{return JSON.parse(localStorage.getItem(CACHE_KEY)||"[]");}catch{return [];}};
-
-    // Auth
-    registerBtn.onclick = async () => {
-      try{
-        const cred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
-        await ensureUserDoc(cred.user);
-      }catch(e){alert(e.message);}
-    };
-    loginBtn.onclick = async () => {
-      try{
-        await signInWithEmailAndPassword(auth, emailEl.value, passEl.value);
-      }catch(e){alert(e.message);}
-    };
-    googleBtn.onclick = async () => {
-      try{
-        const provider = new GoogleAuthProvider();
-        const res = await signInWithPopup(auth, provider);
-        await ensureUserDoc(res.user);
-      }catch(e){ alert(e.message); }
-    };
-    logoutBtn.onclick = () => signOut(auth);
-
+};
     async function ensureUserDoc(user){
       const ref = doc(db, "users", user.uid);
       const snap = await getDoc(ref);
