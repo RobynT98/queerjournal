@@ -71,16 +71,23 @@
       if (pinEl) pinEl.style.display = 'none';
     } catch {}
   </script>
-
-  <header>
-    <h1>🌈 Queer Journal</h1>
+<header>
+  <h1>🌈 Queer Journal</h1>
+  
+  <div style="display:flex; align-items:center; gap:.5rem;">
+    <!-- Användarchip -->
     <div class="user-chip" id="userChip" style="display:none">
       <img id="userPhoto" alt="">
       <small id="userName"></small>
     </div>
-   <button id="logoutTop" class="toggle-dark" title="Logga ut" style="display:none">🚪</button> 
+
+    <!-- Logga ut-knapp (syns bara när inloggad) -->
+    <button id="logoutTop" class="toggle-dark" title="Logga ut" style="display:none">🚪</button> 
+
+    <!-- Dark mode -->
     <button id="darkToggle" class="toggle-dark" title="Byt tema">🌓</button>
-  </header>
+  </div>
+</header>
 
   <main>
     <!-- AUTH -->
