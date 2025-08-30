@@ -78,6 +78,7 @@
       <img id="userPhoto" alt="">
       <small id="userName"></small>
     </div>
+    
     <button id="darkToggle" class="toggle-dark" title="Byt tema">🌓</button>
   </header>
 
@@ -86,9 +87,10 @@
     <section id="authSection" class="card">
       <h2>Logga in / Skapa konto</h2>
       <p class="muted">Dina anteckningar sparas privat i molnet och synkas mellan enheter.</p>
-      <input id="emailInput" type="email" placeholder="E-post" />
+      <input id="emailI<button id="logoutTop" class="toggle-dark" title="Logga ut" style="display:none">🚪</button>nput" type="email" placeholder="E-post" />
       <input id="passwordInput" type="password" placeholder="Lösenord" />
       <div class="row">
+        <button id="resetBtn" class="pill secondary">Glömt lösenord</button>
         <button id="loginBtn" class="pill">Logga in</button>
         <button id="registerBtn" class="pill secondary">Skapa konto</button>
         <button id="googleBtn" class="pill gbtn">
@@ -167,7 +169,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 import { getAuth, onAuthStateChanged,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
-  GoogleAuthProvider, signInWithPopup
+  GoogleAuthProvider, signInWithPopup,sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, query, where, orderBy,
@@ -232,7 +234,20 @@ const auth = getAuth(app);
 
     const saveBtn=document.getElementById('saveBtn');
     const clearBtn=document.getElementById('clearBtn');
-
+      const logoutTop = document.getElementById('logoutTop');
+const resetBtn = document.getElementById('resetBtn');
+resetBtn.onclick = async () => {
+  const email = (emailEl.value || '').trim();
+  if (!email) {
+    return alert("Skriv in din e-post först, så skickar jag en återställningslänk.");
+  }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    alert("Återställningslänk skickad! Kolla din e-post.");
+  } catch (e) {
+    alert("Kunde inte skicka återställningslänk: " + e.message);
+  }
+};
     // Helpers
     const today=()=> new Date().toISOString().slice(0,10);
     const now=()=> new Date().toTimeString().slice(0,5);
