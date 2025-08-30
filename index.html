@@ -8,6 +8,8 @@
   <!-- PWA -->
   <link rel="manifest" href="./manifest.webmanifest">
   <meta name="theme-color" content="#d53369">
+
+  <!-- Ikoner -->
   <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
   <link rel="icon" sizes="32x32" href="./favicon-32x32.png" />
   <link rel="icon" sizes="16x16" href="./favicon-16x16.png" />
@@ -16,9 +18,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" />
 
   <style>
-    :root{
-      --brand1:#d53369;--brand2:#daae51;
-      --btn1:#6a11cb;--btn2:#2575fc;
+    :root{ --brand1:#d53369;--brand2:#daae51; --btn1:#6a11cb;--btn2:#2575fc;
       --bg:#fafafa;--text:#222;--card:#fff;--muted:#666;--line:#e8e8e8;
       --bg-dark:#121212;--text-dark:#eee;--card-dark:#1f1f1f;--line-dark:#2a2a2a;
     }
@@ -62,7 +62,7 @@
 </head>
 <body>
   <script>
-    /* Städa ev. gammalt PIN-lås från äldre versioner */
+    // Städa gammalt PIN-lås (om man haft en äldre version)
     try { ['qj.pin','qj.salt','qj.attempts'].forEach(k => localStorage.removeItem(k)); } catch {}
   </script>
 
@@ -82,7 +82,6 @@
     <!-- AUTH -->
     <section id="authSection" class="card">
       <h2>Logga in / Skapa konto</h2>
-      <p class="muted">Dina anteckningar sparas privat i molnet och synkas mellan enheter.</p>
       <input id="emailInput" type="email" placeholder="E-post" />
       <input id="passwordInput" type="password" placeholder="Lösenord" />
       <div class="row">
@@ -136,7 +135,6 @@
     <!-- ADMIN -->
     <section id="adminMenu" class="card" style="display:none">
       <h2>Adminpanel</h2>
-      <p class="muted">Endast för superadmin.</p>
       <div class="row">
         <button id="btnWarn" class="pill secondary">⚠️ Skicka varning</button>
         <button id="btnBlock" class="pill">🚫 Blockera användare</button>
@@ -175,8 +173,6 @@
     } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
     import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging.js";
 
-    console.log("QJ loaded");
-
     // -------- Config --------
     const firebaseConfig = {
       apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
@@ -193,8 +189,8 @@
     const auth = getAuth(app);
     const db   = getFirestore(app);
 
-    // Offline cache
-    enableIndexedDbPersistence(db).catch(()=>{/* redan aktiv / inget stöd */});
+    // Firestore offline cache
+    enableIndexedDbPersistence(db).catch(()=>{ /* redan aktiv eller ej stöd */ });
 
     // (valfritt) Cloud Messaging
     let messaging = null;
@@ -246,18 +242,20 @@
     const cacheSet=(arr)=>localStorage.setItem(CACHE_KEY,JSON.stringify(arr));
     const cacheGet=()=>{try{return JSON.parse(localStorage.getItem(CACHE_KEY)||"[]");}catch{return [];}};
 
-    // -------- Handlers --------
+    // -------- Auth handlers --------
     registerBtn.onclick = async () => {
       try{
         const cred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
         await ensureUserDoc(cred.user);
       }catch(e){ alert(e.message); }
     };
+
     loginBtn.onclick = async () => {
       try{
         await signInWithEmailAndPassword(auth, emailEl.value, passEl.value);
       }catch(e){ alert(e.message); }
     };
+
     googleBtn.onclick = async () => {
       try{
         const provider = new GoogleAuthProvider();
@@ -265,11 +263,11 @@
         await ensureUserDoc(res.user);
       }catch(e){ alert(e.message); }
     };
+
     const doLogout = () => signOut(auth);
     logoutBtn.onclick  = doLogout;
     logoutTop.onclick  = doLogout;
 
-    // Glömt lösenord
     resetBtn.onclick = async () => {
       const email = (emailEl.value || '').trim();
       if (!email) return alert("Skriv in din e-post först, så skickar jag en återställningslänk.");
@@ -327,11 +325,12 @@
       }catch(e){ console.warn("Push setup failed:", e); }
     }
 
-    // -------- Admin & block --------
+    // -------- Admin + block --------
     async function checkAdmin(user){
       try{
         const ref = doc(db, "admins", user.uid);
         const snap = await getDoc(ref);
+        console.log("Admin doc:", snap.exists(), snap.data());
         if (snap.exists() && snap.data()?.role === "superadmin") {
           adminMenu.style.display = 'block';
           adminOut.textContent = "Superadmin inloggad 🚀";
@@ -342,6 +341,7 @@
       adminOut.textContent = "";
       return false;
     }
+
     async function findUidByEmail(email) {
       const qy = query(collection(db, "users"), where("email", "==", email));
       const s = await getDocs(qy);
@@ -351,19 +351,13 @@
     async function sendWarning(targetUid, reason) {
       const admin = auth.currentUser;
       await addDoc(collection(db, "warnings"), {
-        targetUid,
-        reason: reason || null,
-        by: admin?.uid || null,
-        at: serverTimestamp()
+        targetUid, reason: reason || null, by: admin?.uid || null, at: serverTimestamp()
       });
     }
     async function blockUser(targetUid, reason) {
       const admin = auth.currentUser;
       await setDoc(doc(db, "blocks", targetUid), {
-        blocked: true,
-        reason: reason || null,
-        by: admin?.uid || null,
-        at: serverTimestamp()
+        blocked: true, reason: reason || null, by: admin?.uid || null, at: serverTimestamp()
       }, { merge: true });
     }
     async function checkBlocked(user) {
@@ -378,7 +372,6 @@
       return false;
     }
 
-    // Admin-knappar
     document.getElementById("btnWarn").onclick = async () => {
       const emailOrUid = prompt("Vem vill du varna? Ange email eller uid:");
       if (!emailOrUid) return;
@@ -389,11 +382,10 @@
         if (!found) return alert("Hittar ingen användare med den e-posten.");
         targetUid = found;
       }
-      try {
-        await sendWarning(targetUid, reason);
-        adminOut.textContent = `Varning skickad till ${targetUid}`;
-      } catch(e) { alert("Kunde inte skicka varning: " + e.message); }
+      try { await sendWarning(targetUid, reason); adminOut.textContent = `Varning skickad till ${targetUid}`; }
+      catch(e) { alert("Kunde inte skicka varning: " + e.message); }
     };
+
     document.getElementById("btnBlock").onclick = async () => {
       const emailOrUid = prompt("Vilken användare ska blockeras? Ange email eller uid:");
       if (!emailOrUid) return;
@@ -405,15 +397,14 @@
         targetUid = found;
       }
       if (!confirm(`Blockera användare ${targetUid}?`)) return;
-      try {
-        await blockUser(targetUid, reason);
-        adminOut.textContent = `Användare blockerad: ${targetUid}`;
-      } catch(e) { alert("Kunde inte blockera: " + e.message); }
+      try { await blockUser(targetUid, reason); adminOut.textContent = `Användare blockerad: ${targetUid}`; }
+      catch(e) { alert("Kunde inte blockera: " + e.message); }
     };
 
-    // -------- Live-lyssning --------
+    // -------- Live-lyssning notes --------
     let unsubscribe = null;
     let currentNotes = [];
+
     function startNotesListener(uid){
       if (unsubscribe) { try { unsubscribe(); } catch {} }
       const qy = query(
@@ -421,18 +412,24 @@
         where("uid","==",uid),
         orderBy("date","desc")
       );
-      unsubscribe = onSnapshot(qy, { includeMetadataChanges:true }, (snap)=>{
-        const arr=[];
-        snap.forEach(d=>arr.push(d.data()));
-        currentNotes = arr.sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
-        cacheSet(currentNotes);
-        render();
-        rescheduleAll();
-      }, (err)=>{
-        console.warn("Snapshot error:", err);
-        currentNotes = cacheGet();
-        render();
-      });
+      unsubscribe = onSnapshot(
+        qy,
+        { includeMetadataChanges:true },
+        (snap)=>{
+          const arr=[];
+          snap.forEach(d=>arr.push(d.data()));
+          arr.sort((a,b)=> (b.date + (b.time||"")).localeCompare(a.date + (a.time||"")));
+          currentNotes = arr;
+          cacheSet(currentNotes);
+          render();
+          rescheduleAll();
+        },
+        (err)=>{
+          console.warn("Snapshot error:", err);
+          currentNotes = cacheGet();
+          render();
+        }
+      );
     }
 
     // -------- Auth state --------
@@ -475,30 +472,33 @@
     saveBtn.onclick = async () => {
       const user = auth.currentUser;
       if(!user){alert("Logga in först.");return;}
-      const file=imageInput.files[0];
-      const readImage=(f)=>new Promise(res=>{
-        if(!f)return res(null);
-        const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(f);
-      });
-      const imgData = await readImage(file);
-      const tags = (tagsInput.value||"").split(',').map(s=>s.trim()).filter(Boolean);
-
-      const note = {
-        uid:user.uid,
-        date:dateInput.value,
-        time:timeInput.value,
-        mood:moodInput.value,
-        tags,
-        content:contentInput.value.trim(),
-        image:imgData || null,
-        alarm:Boolean(alarmCheck.checked),
-        createdAt: serverTimestamp()
-      };
 
       try{
+        const file=imageInput.files[0];
+        const imgData = await (file ? new Promise(res=>{
+          const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file);
+        }) : null);
+
+        const tags = (tagsInput.value||"").split(',').map(s=>s.trim()).filter(Boolean);
+
+        const note = {
+          uid:user.uid,
+          date:dateInput.value || today(),
+          time:timeInput.value || now(),
+          mood:moodInput.value || "",
+          tags,
+          content:(contentInput.value||"").trim(),
+          image:imgData || null,
+          alarm:Boolean(alarmCheck.checked),
+          createdAt: serverTimestamp()
+        };
+
         await addDoc(collection(db,"notes"), note);
         clearForm();
-      }catch(e){alert(e.message);}
+      }catch(e){
+        console.error("Save failed:", e);
+        alert("Kunde inte spara: " + (e.message || e.code));
+      }
     };
 
     function clearForm(){
@@ -511,12 +511,9 @@
       timeInput.value=now();
     }
 
-    // -------- Vyer & rendering --------
+    // Vyer & rendering
     let viewMode="list";
-    const setActive=id=>{
-      document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    };
+    const setActive=id=>{document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');};
     document.getElementById('listViewBtn').onclick=()=>{setActive('listViewBtn');viewMode='list';render();};
     document.getElementById('dayViewBtn').onclick =()=>{setActive('dayViewBtn');viewMode='day';render();};
     document.getElementById('weekViewBtn').onclick=()=>{setActive('weekViewBtn');viewMode='week';render();};
@@ -527,8 +524,8 @@
         notesList.innerHTML = '<div class="empty">Inga anteckningar.</div>';
         return;
       }
-      let list = [...currentNotes];
 
+      let list = [...currentNotes];
       if (viewMode === 'day') {
         const iso = today();
         list = list.filter(n => n.date === iso);
@@ -561,7 +558,7 @@
       });
     }
 
-    // -------- Alarm (klient) --------
+    // Alarm (klientside)
     function scheduleAlarm(note) {
       if (!note.date || !note.time) return;
       const dt = new Date(note.date + 'T' + note.time);
@@ -583,11 +580,11 @@
       (currentNotes || []).filter(n => n.alarm).forEach(scheduleAlarm);
     }
 
-    // -------- Tema --------
+    // Tema
     document.getElementById('darkToggle').onclick = () =>
       document.body.classList.toggle('dark');
 
-    // -------- Service Worker (PWA) --------
+    // Service Worker (PWA)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js', { scope: './' })
         .catch(err => console.warn('SW fail:', err));
@@ -595,4 +592,3 @@
   </script>
 </body>
 </html>
-
