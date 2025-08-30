@@ -61,6 +61,14 @@
     .emoji{font-size:1.15rem;margin-right:.35rem}
     .empty{padding:.6rem 0}
     .spacer{height:72px}
+    header{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1rem;background:linear-gradient(90deg,var(--brand1),var(--brand2));color:#fff}
+header h1{margin:0;font-size:1.2rem}
+header .actions{display:flex;align-items:center;gap:.5rem}
+
+.toggle-dark{cursor:pointer;border:0;border-radius:999px;height:36px;min-width:36px;padding:0 .8rem}
+#logoutTop{background:#fff;color:#222}     /* vit pill = tydlig på gradient */
+#darkToggle{background:rgba(255,255,255,.2);color:#fff}
+.user-chip img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.6)}
   </style>
 </head>
 <body>
@@ -71,24 +79,19 @@
       if (pinEl) pinEl.style.display = 'none';
     } catch {}
   </script>
-<header>
+ <header>
   <h1>🌈 Queer Journal</h1>
-  
-  <div style="display:flex; align-items:center; gap:.5rem;">
-    <!-- Användarchip -->
+
+  <div class="actions">
     <div class="user-chip" id="userChip" style="display:none">
       <img id="userPhoto" alt="">
       <small id="userName"></small>
     </div>
 
-    <!-- Logga ut-knapp (syns bara när inloggad) -->
-    <button id="logoutTop" class="toggle-dark" title="Logga ut" style="display:none">🚪</button> 
-
-    <!-- Dark mode -->
+    <button id="logoutTop" class="toggle-dark" title="Logga ut" style="display:none">🚪 Logga ut</button>
     <button id="darkToggle" class="toggle-dark" title="Byt tema">🌓</button>
   </div>
-</header>
-
+ </header> 
   <main>
     <!-- AUTH -->
     <section id="authSection" class="card">
@@ -212,50 +215,77 @@ const auth = getAuth(app);
     try { messaging = getMessaging(app); } catch {}
 
     // UI refs
-    const emailEl = document.getElementById('emailInput');
-    const passEl  = document.getElementById('passwordInput');
-    const loginBtn = document.getElementById('loginBtn');
-    const registerBtn = document.getElementById('registerBtn');
-    const googleBtn = document.getElementById('googleBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
+const emailEl = document.getElementById('emailInput');
+const passEl  = document.getElementById('passwordInput');
+const loginBtn = document.getElementById('loginBtn');
+const registerBtn = document.getElementById('registerBtn');
+const googleBtn = document.getElementById('googleBtn');
+const logoutBtn = document.getElementById('logoutBtn');   // (i auth-kortet)
 
-    const authSection  = document.getElementById('authSection');
-    const noteSection  = document.getElementById('noteSection');
-    const notesSection = document.getElementById('notesSection');
-    const notesList    = document.getElementById('notesList');
+const authSection  = document.getElementById('authSection');
+const noteSection  = document.getElementById('noteSection');
+const notesSection = document.getElementById('notesSection');
+const notesList    = document.getElementById('notesList');
 
-    const userChip  = document.getElementById('userChip');
-    const userName  = document.getElementById('userName');
-    const userPhoto = document.getElementById('userPhoto');
+const userChip  = document.getElementById('userChip');
+const userName  = document.getElementById('userName');
+const userPhoto = document.getElementById('userPhoto');
 
-    const adminMenu = document.getElementById('adminMenu');
-    const adminOut  = document.getElementById('adminOut');
+const adminMenu = document.getElementById('adminMenu');
+const adminOut  = document.getElementById('adminOut');
 
-    const dateInput=document.getElementById('dateInput');
-    const timeInput=document.getElementById('timeInput');
-    const moodInput=document.getElementById('moodInput');
-    const tagsInput=document.getElementById('tagsInput');
-    const contentInput=document.getElementById('contentInput');
-    const imageInput=document.getElementById('imageInput');
-    const alarmCheck=document.getElementById('alarmCheck');
+const dateInput=document.getElementById('dateInput');
+const timeInput=document.getElementById('timeInput');
+const moodInput=document.getElementById('moodInput');
+const tagsInput=document.getElementById('tagsInput');
+const contentInput=document.getElementById('contentInput');
+const imageInput=document.getElementById('imageInput');
+const alarmCheck=document.getElementById('alarmCheck');
 
-    const saveBtn=document.getElementById('saveBtn');
-    const clearBtn=document.getElementById('clearBtn');
-      const logoutTop = document.getElementById('logoutTop');
-const resetBtn = document.getElementById('resetBtn');
+const saveBtn=document.getElementById('saveBtn');
+const clearBtn=document.getElementById('clearBtn');
+
+// 🔽 NYA topp-knappar
+const logoutTop = document.getElementById('logoutTop');
+const resetBtn  = document.getElementById('resetBtn');
+
+// Handlers
+registerBtn.onclick = async () => {
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
+    await ensureUserDoc(cred.user);
+  } catch (e) { alert(e.message); }
+};
+
+loginBtn.onclick = async () => {
+  try {
+    await signInWithEmailAndPassword(auth, emailEl.value, passEl.value);
+  } catch (e) { alert(e.message); }
+};
+
+googleBtn.onclick = async () => {
+  try {
+    const provider = new GoogleAuthProvider();
+    const res = await signInWithPopup(auth, provider);
+    await ensureUserDoc(res.user);
+  } catch (e) { alert(e.message); }
+};
+
+// Logga ut (båda knapparna)
+logoutBtn.onclick  = () => signOut(auth);
+logoutTop.onclick  = () => signOut(auth);
+
+// Glömt lösenord
 resetBtn.onclick = async () => {
   const email = (emailEl.value || '').trim();
-  if (!email) {
-    return alert("Skriv in din e-post först, så skickar jag en återställningslänk.");
-  }
+  if (!email) return alert("Skriv in din e-post först, så skickar jag en återställningslänk.");
   try {
     await sendPasswordResetEmail(auth, email);
     alert("Återställningslänk skickad! Kolla din e-post.");
   } catch (e) {
     alert("Kunde inte skicka återställningslänk: " + e.message);
   }
-};
-    // Helpers
+};    // Helpers
     const today=()=> new Date().toISOString().slice(0,10);
     const now=()=> new Date().toTimeString().slice(0,5);
     dateInput.value=today(); timeInput.value=now();
