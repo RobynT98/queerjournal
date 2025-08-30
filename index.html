@@ -278,6 +278,8 @@
         alert("Kunde inte skicka återställningslänk: " + e.message);
       }
     };
+// Rensa-formulärknappen
+clearBtn.onclick = (e) => {e.preventDefault();clearForm();contentInput.focus(); };
 
     // -------- User doc --------
     async function ensureUserDoc(user){
@@ -499,17 +501,20 @@
         console.error("Save failed:", e);
         alert("Kunde inte spara: " + (e.message || e.code));
       }
-    };
+  function clearForm(){
+  // text/val
+  moodInput.value = "";
+  tagsInput.value = "";
+  contentInput.value = "";
+  alarmCheck.checked = false;
 
-    function clearForm(){
-      moodInput.value="";
-      tagsInput.value="";
-      contentInput.value="";
-      imageInput.value="";
-      alarmCheck.checked=false;
-      dateInput.value=today();
-      timeInput.value=now();
-    }
+  // fil – tillåtet att sätta till tom sträng
+  imageInput.value = "";
+
+  // datum/tid tillbaka till nu
+  dateInput.value = new Date().toISOString().slice(0,10);
+  timeInput.value = new Date().toTimeString().slice(0,5);
+}
 
     // Vyer & rendering
     let viewMode="list";
