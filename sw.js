@@ -6,8 +6,7 @@ const BASE = '/queerjournal/';
 const ASSETS = [
   BASE,
   BASE + 'index.html',
-  BASE + 'manifest.webmanifest',  // om din fil heter site.webmanifest, byt raden nedan
-  BASE + 'site.webmanifest',
+  BASE + 'manifest.webmanifest',
   BASE + 'favicon-16x16.png',
   BASE + 'favicon-32x32.png',
   BASE + 'android-chrome-192x192.png',
@@ -18,13 +17,11 @@ const CACHE = `qj-cache-${VERSION}`;
 
 // Pre-cache
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(ASSETS))
-  );
+  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
   self.skipWaiting();
 });
 
-// Rensa gamla cache-ar
+// Rensa gamla cachear
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -34,7 +31,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Tillåt “skip waiting” från klienten (frivilligt)
+// Tillåt “skip waiting” från klienten
 self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
@@ -44,10 +41,10 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Hantera bara samma-origin
-  if (url.origin !== location.origin) return;
+  // Bara samma origin + bara GET
+  if (url.origin !== location.origin || req.method !== 'GET') return;
 
-  // 1) Navigeringar (sidor): network-first med fallback till cache/offline
+  // 1) Navigeringar (sidor): network-first med fallback
   if (req.mode === 'navigate') {
     event.respondWith(networkFirst(req));
     return;
@@ -70,10 +67,10 @@ async function networkFirst(req) {
     const cache = await caches.open(CACHE);
     cache.put(req, fresh.clone());
     return fresh;
-  } catch (err) {
+  } catch {
     const cached = await caches.match(req);
     if (cached) return cached;
-    // offline-fallback till startsidan om inget hittas
+    // Offline-fallback till startsidan
     return caches.match(BASE + 'index.html');
   }
 }
@@ -81,9 +78,14 @@ async function networkFirst(req) {
 async function staleWhileRevalidate(req) {
   const cache = await caches.open(CACHE);
   const cached = await cache.match(req);
-  const fetchPromise = fetch(req).then((resp) => {
-    cache.put(req, resp.clone());
-    return resp;
-  }).catch(() => cached);
+  const fetchPromise = fetch(req)
+    .then((resp) => {
+      // Spara bara cachebara svar
+      if (resp && resp.status === 200 && resp.type !== 'opaque') {
+        cache.put(req, resp.clone());
+      }
+      return resp;
+    })
+    .catch(() => cached);
   return cached || fetchPromise;
-  }
+}
