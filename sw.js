@@ -1,6 +1,6 @@
 // sw.js – Queer Journal (GitHub Pages)
 /* v6 */
-const VERSION = 'v25-2025-08-30';
+const VERSION = 'v26-2025-08-30';
 const BASE = '/queerjournal/';
 
 const ASSETS = [
