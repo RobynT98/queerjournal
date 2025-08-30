@@ -5,9 +5,10 @@
   "start_url": "/queerjournal/index.html",
   "scope": "/queerjournal/",
   "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay"],
   "background_color": "#121212",
   "theme_color": "#d53369",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "android-chrome-192x192.png",
@@ -40,14 +41,12 @@
       "src": "screenshot1.png",
       "sizes": "691x1536",
       "type": "image/png",
-      "form_factor": "narrow",
       "label": "Inloggningsskärm i ljust läge"
     },
     {
       "src": "screenshot2.png",
       "sizes": "691x1536",
       "type": "image/png",
-      "form_factor": "narrow",
       "label": "Inloggningsskärm i mörkt läge"
     }
   ],
