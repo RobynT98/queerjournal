@@ -1,4 +1,4 @@
-// app.js (ES Module) — privat + community + reaktioner
+// app.js (ES Module)
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 import {
@@ -9,7 +9,7 @@ import {
 import {
   getFirestore, collection, addDoc, deleteDoc, updateDoc,
   query, where, orderBy, serverTimestamp, onSnapshot,
-  doc, getDoc, getDocs, setDoc, enableIndexedDbPersistence, limit, increment
+  doc, getDoc, getDocs, setDoc, enableIndexedDbPersistence, increment
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 // ------------ Firebase config ------------
@@ -55,7 +55,6 @@ const tagsInput    = document.getElementById('tagsInput');
 const contentInput = document.getElementById('contentInput');
 const imageInput   = document.getElementById('imageInput');
 const alarmCheck   = document.getElementById('alarmCheck');
-// NY: valfritt toggle i HTML med id="publicCheck" (om den finns används den)
 const publicCheck  = document.getElementById('publicCheck');
 
 const saveBtn  = document.getElementById('saveBtn');
@@ -65,10 +64,14 @@ const userChip  = document.getElementById('userChip');
 const userName  = document.getElementById('userName');
 const userPhoto = document.getElementById('userPhoto');
 
-// Community-vy (om du lägger till den i index.html)
 const communitySection = document.getElementById('communitySection');
 const communityList    = document.getElementById('communityList');
-const communityBtn     = document.getElementById('communityViewBtn');
+
+const listViewBtn   = document.getElementById('listViewBtn');
+const dayViewBtn    = document.getElementById('dayViewBtn');
+const weekViewBtn   = document.getElementById('weekViewBtn');
+const alarmViewBtn  = document.getElementById('alarmViewBtn');
+const communityBtn  = document.getElementById('communityViewBtn');
 
 dateInput.value = today();
 timeInput.value = now();
@@ -95,8 +98,8 @@ googleBtn.onclick = async () => {
 };
 
 const doLogout = () => signOut(auth);
-if (logoutBtn)  logoutBtn.onclick = doLogout;
-if (logoutTop)  logoutTop.onclick = doLogout;
+logoutBtn.onclick = doLogout;
+logoutTop.onclick = doLogout;
 
 resetBtn.onclick = async () => {
   const email = (emailEl.value || '').trim();
@@ -136,18 +139,19 @@ function clearForm(){
   tagsInput.value = "";
   contentInput.value = "";
   alarmCheck.checked = false;
-  if (publicCheck) publicCheck.checked = false;
+  publicCheck.checked = false;
   imageInput.value = "";
   dateInput.value = today();
   timeInput.value = now();
 }
-if (clearBtn) clearBtn.onclick = (e) => { e?.preventDefault?.(); clearForm(); contentInput?.focus?.(); };
+clearBtn.onclick = (e) => { e.preventDefault(); clearForm(); contentInput.focus(); };
 
 saveBtn.onclick = async () => {
   const user = auth.currentUser;
   if(!user){ alert("Logga in först."); return; }
 
   try {
+    // ev. bild -> dataURL
     const file = imageInput.files[0];
     const imgData = file ? await new Promise(res=>{
       const r = new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file);
@@ -163,12 +167,13 @@ saveBtn.onclick = async () => {
       content: (contentInput.value||"").trim(),
       image: imgData !== null ? imgData : editOriginalImage,
       alarm: !!alarmCheck.checked,
-      public: !!(publicCheck && publicCheck.checked),               // NYTT
-      reactions: editId ? undefined : { heart: 0, rainbow: 0, sparkles: 0 }, // init vid ny
-      author: editId ? undefined : {                                  // spara lätt profil på noten
+      public: !!publicCheck.checked,
+      reactions: { heart: 0, rainbow: 0, sparkles: 0 }, // init om ny
+      flagCount: 0,
+      author: {
         uid: user.uid,
         name: user.displayName || user.email || "Anonym",
-        photoURL: user.photoURL || null
+        photo: user.photoURL || null
       },
       updatedAt: serverTimestamp(),
     };
@@ -189,7 +194,7 @@ saveBtn.onclick = async () => {
   }
 };
 
-// ------------ Live listener & render (mina anteckningar) ------------
+// ------------ Private list: live listener & render ------------
 let unsubscribe = null;
 let currentNotes = [];
 
@@ -205,27 +210,10 @@ function startNotesListener(uid){
     snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
     arr.sort((a,b)=> (b.date + (b.time||"")).localeCompare(a.date + (a.time||"")));
     currentNotes = arr;
-    renderMyNotes();
+    render();
     rescheduleAll();
   }, (err)=> console.warn("Snapshot error:", err));
 }
-
-let viewMode = "list";
-const setActive = (id) => {
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  const el = document.getElementById(id);
-  if (el) el.classList.add('active');
-};
-document.getElementById('listViewBtn')?.addEventListener('click', ()=>{ setActive('listViewBtn');  viewMode='list';  renderMyNotes(); });
-document.getElementById('dayViewBtn')?.addEventListener('click',  ()=>{ setActive('dayViewBtn');   viewMode='day';   renderMyNotes(); });
-document.getElementById('weekViewBtn')?.addEventListener('click', ()=>{ setActive('weekViewBtn');  viewMode='week';  renderMyNotes(); });
-document.getElementById('alarmViewBtn')?.addEventListener('click',()=>{ setActive('alarmViewBtn'); viewMode='alarm'; renderMyNotes(); });
-// Om du lägger till Community-fliken i index.html:
-communityBtn?.addEventListener('click', ()=>{
-  setActive('communityViewBtn');
-  renderMyNotes(); // döljer egen lista
-  communitySection?.scrollIntoView({ behavior:'smooth' });
-});
 
 function enterEdit(n){
   editId = n.id;
@@ -236,24 +224,36 @@ function enterEdit(n){
   tagsInput.value = (n.tags || []).join(", ");
   contentInput.value = n.content || "";
   alarmCheck.checked = !!n.alarm;
-  if (publicCheck) publicCheck.checked = !!n.public;
+  publicCheck.checked = !!n.public;
   imageInput.value = "";
   contentInput.focus();
 }
 
-function renderMyNotes(){
-  // toggla sektioner om community finns
-  if (communitySection) {
-    notesSection.style.display = (viewMode === 'community') ? 'none' : 'block';
-    communitySection.style.display = (viewMode === 'community') ? 'block' : 'none';
-  }
+let viewMode = "list";
+const setActive = (id) => {
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+};
 
+listViewBtn.onclick  = ()=>{ setActive('listViewBtn');  viewMode='list';  notesSection.style.display='block'; communitySection.style.display='none'; render(); };
+dayViewBtn.onclick   = ()=>{ setActive('dayViewBtn');   viewMode='day';   notesSection.style.display='block'; communitySection.style.display='none'; render(); };
+weekViewBtn.onclick  = ()=>{ setActive('weekViewBtn');  viewMode='week';  notesSection.style.display='block'; communitySection.style.display='none'; render(); };
+alarmViewBtn.onclick = ()=>{ setActive('alarmViewBtn'); viewMode='alarm'; notesSection.style.display='block'; communitySection.style.display='none'; render(); };
+
+// Community-tab
+communityBtn.onclick = ()=>{
+  setActive('communityViewBtn');
+  notesSection.style.display = 'none';
+  communitySection.style.display = 'block';
+  renderCommunity();
+};
+
+function render(){
   if (!currentNotes.length){
     notesList.innerHTML = '<div class="empty">Inga anteckningar.</div>';
     return;
   }
 
-  // filtrering per vy
   let list = [...currentNotes];
   if (viewMode === 'day'){
     const iso = today();
@@ -276,9 +276,10 @@ function renderMyNotes(){
     const title =
       (n.mood ? `<span class="emoji">${n.mood.split(' ')[0]}</span>` : '') +
       (n.content?.split('\n')[0]?.slice(0,40) || 'Anteckning');
+
     div.innerHTML = `
       <strong>${title}</strong><br>
-      <span class="muted">${n.date} ${n.time || ''} ${n.alarm ? '⏰' : ''} ${n.public ? '· 🌍 delad' : ''}</span>
+      <span class="muted">${n.date} ${n.time || ''} ${n.alarm ? '⏰' : ''} ${n.public ? '· 🌍 Publik' : ''}</span>
       <p>${(n.content || '').replace(/\n/g,'<br>')}</p>
       ${(n.tags || []).map(t=>`<span class="badge">#${t}</span>`).join(' ')}
       ${n.image ? `<img class="thumb" src="${n.image}" alt="bild">` : ''}
@@ -293,68 +294,6 @@ function renderMyNotes(){
       try{ await deleteDoc(doc(db,"notes", n.id)); }catch(e){ alert("Kunde inte radera: " + e.message); }
     };
     notesList.appendChild(div);
-  });
-}
-
-// ------------ Community (delade anteckningar) ------------
-let unsubscribeCommunity = null;
-function startCommunityListener(){
-  if (!communityList) return; // rendera bara om HTML finns
-  if (unsubscribeCommunity) { try{ unsubscribeCommunity(); }catch{} }
-  const qy = query(
-    collection(db,"notes"),
-    where("public","==",true),
-    orderBy("createdAt","desc"),
-    limit(50)
-  );
-  unsubscribeCommunity = onSnapshot(qy, (snap)=>{
-    const arr = [];
-    snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
-    renderCommunity(arr);
-  });
-}
-
-function react(noteId, kind){
-  // bumpa en nyckel i reactions.* med increment
-  const ref = doc(db, "notes", noteId);
-  updateDoc(ref, { [`reactions.${kind}`]: increment(1) }).catch(e=>console.warn(e));
-}
-
-function renderCommunity(items){
-  if (!communityList) return;
-  if (!items.length){
-    communityList.innerHTML = '<div class="empty">Inga delade inlägg ännu.</div>';
-    return;
-  }
-  communityList.innerHTML = "";
-  items.forEach(n=>{
-    const div = document.createElement('div');
-    div.className = 'entry';
-    const authorName = n?.author?.name || "Anonym";
-    const title =
-      (n.mood ? `<span class="emoji">${n.mood.split(' ')[0]}</span>` : '') +
-      (n.content?.split('\n')[0]?.slice(0,60) || 'Inlägg');
-    const r = n.reactions || {};
-    div.innerHTML = `
-      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem">
-        ${n?.author?.photoURL ? `<img src="${n.author.photoURL}" alt="" style="width:28px;height:28px;border-radius:50%">` : `<div class="badge">${authorName[0]||"?"}</div>`}
-        <strong>${authorName}</strong>
-        <span class="muted" style="margin-left:auto">${n.date || ''} ${n.time || ''}</span>
-      </div>
-      <strong>${title}</strong>
-      <p>${(n.content || '').replace(/\n/g,'<br>')}</p>
-      ${(n.tags || []).map(t=>`<span class="badge">#${t}</span>`).join(' ')}
-      ${n.image ? `<img class="thumb" src="${n.image}" alt="bild">` : ''}
-      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
-        <button class="pill secondary r-heart">❤️ ${r.heart||0}</button>
-        <button class="pill secondary r-rainbow">🌈 ${r.rainbow||0}</button>
-        <button class="pill secondary r-sparkles">✨ ${r.sparkles||0}</button>
-      </div>
-    `;
-    div.querySelector('.r-heart').onclick    = ()=> react(n.id, 'heart');
-    div.querySelector('.r-rainbow').onclick  = ()=> react(n.id, 'rainbow');
-    div.querySelector('.r-sparkles').onclick = ()=> react(n.id, 'sparkles');
-    communityList.appendChild(div);
   });
 }
 
@@ -380,30 +319,204 @@ function rescheduleAll(){
   (currentNotes || []).filter(n => n.alarm).forEach(scheduleAlarm);
 }
 
+// ------------ COMMUNITY: live feed, filters, reactions, flag ------------
+let unsubscribeCommunity = null;
+let communityNotes = [];
+let communityFilterTag = null;
+let communityFilterAuthor = null;
+// lokalt dolda (flaggar av mig)
+const locallyHidden = new Set();
+
+function startCommunityListener(){
+  if (unsubscribeCommunity) { try{ unsubscribeCommunity(); }catch{} }
+  const qy = query(
+    collection(db, "notes"),
+    where("public", "==", true),
+    orderBy("createdAt", "desc")
+  );
+  unsubscribeCommunity = onSnapshot(qy, (snap)=>{
+    const arr=[];
+    snap.forEach(d=> arr.push({ id:d.id, ...d.data() }));
+    communityNotes = arr;
+    renderCommunity();
+  });
+}
+
+function chipHTML(author){
+  const name = author?.name || "Anonym";
+  const photo = author?.photo || "";
+  const initials = name?.[0]?.toUpperCase() || "A";
+  return `
+    <span class="user-chip" style="cursor:pointer;display:inline-flex;align-items:center;gap:.45rem">
+      ${photo ? `<img src="${photo}" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover">`
+              : `<span style="width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;background:#555;color:#fff;font-size:.85rem">${initials}</span>`}
+      <small>${name}</small>
+    </span>
+  `;
+}
+
+function renderCommunity(){
+  if (!communitySection) return;
+  let list = communityNotes.filter(n => !locallyHidden.has(n.id));
+
+  if (communityFilterTag){
+    list = list.filter(n => (n.tags||[]).includes(communityFilterTag));
+  }
+  if (communityFilterAuthor){
+    list = list.filter(n => n.author?.uid === communityFilterAuthor);
+  }
+
+  if (!list.length){
+    communityList.innerHTML = '<div class="empty">Inga delade inlägg just nu.</div>';
+    return;
+  }
+
+  // filterrad indikator
+  const filtersActive = communityFilterTag || communityFilterAuthor;
+  communityList.innerHTML = filtersActive
+    ? `<div class="muted" style="margin-bottom:.5rem">
+         Filter: ${communityFilterTag ? `#${communityFilterTag}` : ''} ${communityFilterAuthor ? '· användare' : ''} 
+         <button class="pill secondary" id="clearCommunityFilter" style="margin-left:.5rem">Rensa filter</button>
+       </div>`
+    : '';
+
+  list.forEach(n=>{
+    const r = n.reactions || {};
+    const heart   = r.heart   || 0;
+    const rainbow = r.rainbow || 0;
+    const spark   = r.sparkles|| 0;
+
+    const div = document.createElement('div');
+    div.className = 'entry';
+    div.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem">
+        <div class="author-chip">${chipHTML(n.author)}</div>
+        <span class="muted">${n.date || ''} ${n.time || ''}</span>
+      </div>
+
+      <p style="margin:.5rem 0 0">${(n.content||'').replace(/\n/g,'<br>')}</p>
+      ${(n.tags || []).map(t => `<span class="badge tagBtn" data-tag="${t}" style="cursor:pointer">#${t}</span>`).join(' ')}
+      ${n.image ? `<img class="thumb" src="${n.image}" alt="bild">` : ''}
+
+      <div style="margin-top:.6rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+        <button class="pill secondary react" data-emo="heart">❤️ ${heart}</button>
+        <button class="pill secondary react" data-emo="rainbow">🌈 ${rainbow}</button>
+        <button class="pill secondary react" data-emo="sparkles">✨ ${spark}</button>
+        <button class="pill secondary flagBtn">⚑ Flagga</button>
+      </div>
+    `;
+
+    // profilchip klick => filter på författare
+    div.querySelector('.author-chip')?.addEventListener('click', ()=>{
+      if (n.author?.uid){
+        communityFilterAuthor = n.author.uid;
+        communityFilterTag = null;
+        setActive('communityViewBtn');
+        notesSection.style.display='none'; communitySection.style.display='block';
+        renderCommunity();
+      }
+    });
+
+    // taggar klick => filter på tag
+    div.querySelectorAll('.tagBtn').forEach(el=>{
+      el.onclick = ()=>{
+        communityFilterTag = el.dataset.tag;
+        communityFilterAuthor = null;
+        setActive('communityViewBtn');
+        notesSection.style.display='none'; communitySection.style.display='block';
+        renderCommunity();
+      };
+    });
+
+    // reaktioner
+    div.querySelectorAll('.react').forEach(btn=>{
+      btn.onclick = ()=> toggleReaction(n.id, btn.dataset.emo);
+    });
+
+    // flagga
+    div.querySelector('.flagBtn').onclick = ()=> flagNote(n.id);
+
+    communityList.appendChild(div);
+  });
+
+  // Rensa filter
+  const clear = document.getElementById('clearCommunityFilter');
+  if (clear){
+    clear.onclick = ()=>{
+      communityFilterTag = null;
+      communityFilterAuthor = null;
+      renderCommunity();
+    };
+  }
+}
+
+// Reaction toggle med dedikerat subdoc per user+emoji
+async function toggleReaction(noteId, emoji){
+  const user = auth.currentUser;
+  if (!user) { alert("Logga in för att reagera."); return; }
+  const keyMap = { heart:'heart', rainbow:'rainbow', sparkles:'sparkles' };
+  const field = `reactions.${keyMap[emoji]}`;
+
+  try{
+    const ref = doc(db, `notes/${noteId}/reactions`, `${user.uid}_${emoji}`);
+    const snap = await getDoc(ref);
+    if (snap.exists()){
+      // ta bort min reaktion
+      await deleteDoc(ref);
+      await updateDoc(doc(db,'notes',noteId), { [field]: increment(-1) });
+    } else {
+      await setDoc(ref, { by: user.uid, emoji, at: serverTimestamp() });
+      await updateDoc(doc(db,'notes',noteId), { [field]: increment(1) });
+    }
+  }catch(e){
+    console.warn("Reaction fail:", e);
+  }
+}
+
+// Flagga: lokalt dölj + skriv flag subdoc + öka flagCount
+async function flagNote(noteId){
+  const user = auth.currentUser;
+  if (!user) { alert("Logga in för att flagga."); return; }
+  if (!confirm("Flagga inlägget som olämpligt?")) return;
+  try{
+    await setDoc(doc(db, `notes/${noteId}/flags`, user.uid), { by:user.uid, at: serverTimestamp() }, { merge:true });
+    await updateDoc(doc(db,'notes',noteId), { flagCount: increment(1) });
+    locallyHidden.add(noteId);
+    renderCommunity();
+    alert("Tack! Inlägget doldes för dig och flaggan skickades till admin.");
+  }catch(e){
+    console.warn("Flag fail:", e);
+  }
+}
+
 // ------------ Auth state ------------
 onAuthStateChanged(auth, async (user)=>{
   if (user){
     authSection.style.display = 'none';
     noteSection.style.display = 'block';
-    notesSection.style.display = 'block';
+    // visa sista aktiva tab (default lista)
+    notesSection.style.display = (document.querySelector('.tab.active')?.id === 'communityViewBtn') ? 'none' : 'block';
+    communitySection.style.display = (document.querySelector('.tab.active')?.id === 'communityViewBtn') ? 'block' : 'none';
 
-    if (logoutBtn)  logoutBtn.style.display = '';
-    if (logoutTop)  logoutTop.style.display = '';
-    if (userChip)   userChip.style.display = '';
-    if (userName)   userName.textContent = user.displayName || user.email || 'Inloggad';
-    if (userPhoto)  userPhoto.src = user.photoURL || './android-chrome-192x192.png';
+    // visa logga ut + chip
+    logoutBtn.style.display = '';
+    logoutTop.style.display = '';
+    userChip.style.display = '';
+    userName.textContent = user.displayName || user.email || 'Inloggad';
+    userPhoto.src = user.photoURL || './android-chrome-192x192.png';
 
     await ensureUserDoc(user);
     startNotesListener(user.uid);
-    startCommunityListener(); // starta community-feed om HTML finns
+    startCommunityListener();
   } else {
     authSection.style.display = 'block';
     noteSection.style.display = 'none';
     notesSection.style.display = 'none';
+    communitySection.style.display = 'none';
 
-    if (logoutBtn)  logoutBtn.style.display = 'none';
-    if (logoutTop)  logoutTop.style.display = 'none';
-    if (userChip)   userChip.style.display = 'none';
+    logoutBtn.style.display = 'none';
+    logoutTop.style.display = 'none';
+    userChip.style.display = 'none';
 
     if (unsubscribe) { try{ unsubscribe(); }catch{} }
     if (unsubscribeCommunity) { try{ unsubscribeCommunity(); }catch{} }
