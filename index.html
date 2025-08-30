@@ -162,23 +162,25 @@
   <audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
   <!-- App-logik -->
-  <script type="module">
-    // Firebase imports
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import {
-      getAuth, onAuthStateChanged,
-      signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
-      GoogleAuthProvider, signInWithPopup
-    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import {
-      getFirestore, collection, addDoc, query, where, orderBy,
-      serverTimestamp, onSnapshot, doc, getDoc, getDocs, setDoc,
-      enableIndexedDbPersistence
-    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging.js";
+    <script type="module">
+// ---------------- Firebase imports ----------------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
+  GoogleAuthProvider, signInWithPopup
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import {
+  getFirestore, collection, addDoc, query, where, orderBy,
+  serverTimestamp, onSnapshot, doc, getDoc, getDocs, setDoc,
+  enableIndexedDbPersistence
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+import {
+  getMessaging, getToken, onMessage
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging.js";
 
-    // Config
-    const firebaseConfig = {
+console.log("QJournal app loaded v9"); // liten sanity-check i konsolen
+      
       apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
       authDomain: "queerjournal-1cc9d.firebaseapp.com",
       projectId: "queerjournal-1cc9d",
