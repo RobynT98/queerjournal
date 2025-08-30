@@ -67,6 +67,26 @@
   </script>
 
   <header>
+    <div id="cookie-banner" style="position:fixed;bottom:0;width:100%;background:#222;color:#fff;padding:10px;text-align:center;display:none;">
+  <p>Vi använder cookies för att förbättra din upplevelse. 
+    <a href="COOKIES.md" style="color:#4ecdc4;">Läs mer</a>
+  </p>
+  <button onclick="acceptCookies()">OK</button>
+</div>
+
+<script>
+  function acceptCookies() {
+    localStorage.setItem("cookiesAccepted", "true");
+    document.getElementById("cookie-banner").style.display = "none";
+  }
+
+  window.onload = function() {
+    if (!localStorage.getItem("cookiesAccepted")) {
+      document.getElementById("cookie-banner").style.display = "block";
+    }
+  }
+</script>
+
     <h1>🌈 Queer Journal</h1>
     <div class="actions">
       <div class="user-chip" id="userChip" style="display:none">
