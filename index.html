@@ -180,15 +180,16 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-messaging.js";
 
 console.log("QJournal app loaded v9"); // liten sanity-check i konsolen
-      
-      apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
-      authDomain: "queerjournal-1cc9d.firebaseapp.com",
-      projectId: "queerjournal-1cc9d",
-      storageBucket: "queerjournal-1cc9d.firebasestorage.app",
-      messagingSenderId: "53325952423",
-      appId: "1:53325952423:web:24837ecc436332e436b282",
-      measurementId: "G-0T6JCFJCFZ"
-    };
+     // ---------------- Config ----------------
+const firebaseConfig = {
+  apiKey: "AIzaSyB2le8k0FJkvVypBQw8Ty9vFVKYQPjUMFc",
+  authDomain: "queerjournal-1cc9d.firebaseapp.com",
+  projectId: "queerjournal-1cc9d",
+  storageBucket: "queerjournal-1cc9d.firebasestorage.app",
+  messagingSenderId: "53325952423",
+  appId: "1:53325952423:web:24837ecc436332e436b282",
+  measurementId: "G-0T6JCFJCFZ"
+}; 
 
     // Init
     const app = initializeApp(firebaseConfig);
