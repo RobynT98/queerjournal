@@ -25,6 +25,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap">
   <link rel="stylesheet" href="./styles.css">
+
+  <!-- Små förbättringar för iOS standalone -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
   <noscript>Den här appen kräver JavaScript för att fungera.</noscript>
@@ -128,6 +132,14 @@
     <!-- 5.4 COMMUNITY -->
     <section id="communitySection" class="card" style="display:none" aria-labelledby="communityTitle">
       <h2 id="communityTitle">Community</h2>
+
+      <!-- Sökfält (matchar app.js: communitySearchInput / communitySearchBtn / communitySearchResults) -->
+      <div class="row" style="margin-bottom:.5rem">
+        <input id="communitySearchInput" type="text" placeholder="Sök: text, #tagg eller namn">
+        <button id="communitySearchBtn" class="pill secondary">Sök</button>
+        <div id="communitySearchResults" class="muted" style="align-self:center"></div>
+      </div>
+
       <div id="communityList" class="empty">Inga delade inlägg ännu.</div>
     </section>
 
@@ -154,7 +166,7 @@
       </div>
     </section>
 
-    <!-- 5.6 ANNANS PROFIL – VISNING -->
+    <!-- 5.6 ANNANS PROFIL – VISNING (DM-panel skapas dynamiskt av app.js) -->
     <section id="profileViewSection" class="card" style="display:none;max-width:920px;margin-inline:auto" aria-labelledby="otherProfileTitle">
       <h2 id="otherProfileTitle" style="display:none">Profil</h2>
       <div id="profileViewHeader" class="row" style="align-items:center;gap:.75rem"></div>
@@ -181,7 +193,7 @@
       <a href="PRIVACY.md">Integritetspolicy</a> ·
       <a href="COOKIES.md">Cookiepolicy</a>
     </p>
-    <p>© 2025 Queer Journal</p>
+    <p id="copyrightLine">© 2025 Queer Journal</p>
   </footer>
 
   <!-- ============== 7) LJUDFILER (ALARM) ============== -->
@@ -209,20 +221,22 @@
       }
     });
   </script>
+
+  <!-- ============== 10) FOOTER-SPACER FIX (så inget hamnar bakom) ============== -->
   <script>
-  function adjustFooterSpace(){
-    const f = document.querySelector('footer');
-    const h = f ? f.offsetHeight : 0;
-    // Lägg spacing både på <body> och <main> för säkerhets skull
-    document.body.style.paddingBottom = (h + 12) + 'px';
-    const main = document.querySelector('main');
-    if(main) main.style.paddingBottom = (h + 12) + 'px';
-  }
-  window.addEventListener('load', adjustFooterSpace);
-  window.addEventListener('resize', adjustFooterSpace);
-  // kör även efter dynamiska visningar (t.ex. när profilsidor öppnas)
-  const ro = new ResizeObserver(adjustFooterSpace);
-  ro.observe(document.body);
-</script>
+    function adjustFooterSpace(){
+      const f = document.querySelector('footer');
+      const h = f ? f.offsetHeight : 0;
+      // Lägg spacing både på <body> och <main> för säkerhets skull
+      document.body.style.paddingBottom = (h + 12) + 'px';
+      const main = document.querySelector('main');
+      if(main) main.style.paddingBottom = (h + 12) + 'px';
+    }
+    window.addEventListener('load', adjustFooterSpace);
+    window.addEventListener('resize', adjustFooterSpace);
+    // kör även efter dynamiska visningar (t.ex. när profilsidor öppnas)
+    const ro = new ResizeObserver(adjustFooterSpace);
+    ro.observe(document.body);
+  </script>
 </body>
 </html>
