@@ -239,3 +239,47 @@ button:focus-visible, a:focus-visible{
   body{ background:#fff; color:#000 }
   .card{ box-shadow:none; border:1px solid #ccc; background:#fff }
 }
+:root{
+  --footer-h:72px; /* behåll som minhöjd, men vi använder auto */
+}
+
+/* ... */
+
+footer{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  /* TA BORT height: var(--footer-h); */
+  /* Lägg till: */
+  min-height: var(--footer-h);
+  height: auto;                 /* <- auto-höjd så copyright får plats */
+  padding-bottom: .35rem;       /* lite luft */
+  background:#2a2a2a; color:#fff;
+  border-top:1px solid rgba(255,255,255,.08);
+  z-index:1000;
+  display:flex; flex-direction:column; justify-content:center;
+}
+
+/* komprimera innehållet lite så det ryms snyggt */
+footer .tabs{ max-width:920px; margin:0 auto; display:flex; gap:.25rem; padding:.35rem; }
+footer .tab{ flex:1; background:transparent; border:0; padding:.5rem 0; cursor:pointer; color:inherit; border-bottom:2px solid transparent; }
+footer .tab.active{ font-weight:600; border-color:var(--brand1) }
+footer p{ margin:.15rem 0 0; text-align:center; font-size:.9rem }
+footer a{ color:#4ecdc4; text-decoration:none }
+footer a:hover{ text-decoration:underline }
+
+/* Ge main egen botten-padding (utöver body) som fallback */
+main{ padding-bottom: calc(var(--footer-h) + 16px); }
+
+/* Extra kompakt läge på små skärmar */
+@media (max-width:540px){
+  footer .tab{ padding:.45rem 0; font-size:.95rem }
+  footer p{ font-size:.85rem }
+}
+footer{
+  position: sticky;
+  bottom: 0;
+  height: auto;
+  min-height: var(--footer-h);
+}
+body, main{ padding-bottom: 0 !important; } /* ej behövs med sticky */
+
