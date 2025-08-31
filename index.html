@@ -29,6 +29,38 @@
   <!-- Små förbättringar för iOS standalone -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- ============== 3.5) Minimal footer-fix så inget överlappar ============== -->
+  <style>
+    /* Gör footern tydlig och säker */
+    footer {
+      position: fixed; /* sticky footer */
+      left: 0; right: 0; bottom: 0;
+      z-index: 999;
+      background: var(--card, #111);
+      border-top: 1px solid var(--line, #333);
+      padding: .6rem .8rem;
+    }
+    footer .tabs {
+      display: grid;
+      grid-auto-flow: column;
+      gap: .4rem;
+      margin-bottom: .35rem;
+    }
+    footer p {
+      margin: .15rem 0 0;
+      text-align: center;
+      font-size: .85rem;
+      opacity: .85;
+    }
+    /* Säkerställ att innehåll inte döljs (script justerar också) */
+    main { display:block; }
+    header { position: relative; z-index: 1; }
+    /* Bättre klick/kontrast för länkar i footer */
+    footer a { color: inherit; text-decoration: underline; }
+    /* Knappar i header som inte är i formulär */
+    button { cursor: pointer; }
+  </style>
 </head>
 <body>
   <noscript>Den här appen kräver JavaScript för att fungera.</noscript>
@@ -39,34 +71,34 @@
   </script>
 
   <!-- ============== 4) HEADER ============== -->
-  <header>
+  <header role="banner">
     <h1>🌈 Queer Journal</h1>
-    <div class="actions">
+    <div class="actions" role="group" aria-label="Snabbåtgärder">
       <div class="user-chip" id="userChip" style="display:none">
-        <img id="userPhoto" alt="">
+        <img id="userPhoto" alt="" loading="lazy">
         <small id="userName"></small>
       </div>
-      <button id="editProfileBtn" class="toggle-dark" title="Redigera profil" style="display:none">👤</button>
-      <button id="logoutTop" class="toggle-dark" title="Logga ut" style="display:none">🚪</button>
-      <button id="darkToggle" class="toggle-dark" title="Byt tema">🌓</button>
+      <button type="button" id="editProfileBtn" class="toggle-dark" title="Redigera profil" style="display:none">👤</button>
+      <button type="button" id="logoutTop" class="toggle-dark" title="Logga ut" style="display:none">🚪</button>
+      <button type="button" id="darkToggle" class="toggle-dark" title="Byt tema">🌓</button>
     </div>
   </header>
 
   <!-- ============== 5) HUVUDINNEHÅLL ============== -->
-  <main>
+  <main role="main">
     <!-- 5.1 AUTH -->
     <section id="authSection" class="card" aria-labelledby="authTitle">
       <h2 id="authTitle">Logga in / Skapa konto</h2>
       <input id="emailInput" type="email" autocomplete="username" placeholder="E-post" />
       <input id="passwordInput" type="password" autocomplete="current-password" placeholder="Lösenord" />
       <div class="row">
-        <button id="resetBtn" class="pill secondary">Glömt lösenord</button>
-        <button id="loginBtn" class="pill">Logga in</button>
-        <button id="registerBtn" class="pill secondary">Skapa konto</button>
-        <button id="googleBtn" class="pill gbtn">
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt=""> Google
+        <button type="button" id="resetBtn" class="pill secondary">Glömt lösenord</button>
+        <button type="button" id="loginBtn" class="pill">Logga in</button>
+        <button type="button" id="registerBtn" class="pill secondary">Skapa konto</button>
+        <button type="button" id="googleBtn" class="pill gbtn" aria-label="Logga in med Google">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" aria-hidden="true"> Google
         </button>
-        <button id="logoutBtn" class="pill" style="display:none">Logga ut</button>
+        <button type="button" id="logoutBtn" class="pill" style="display:none">Logga ut</button>
       </div>
     </section>
 
@@ -118,8 +150,8 @@
       </div>
 
       <div class="row" style="margin-top:.6rem">
-        <button id="saveBtn" class="pill">Spara</button>
-        <button id="clearBtn" class="pill secondary">Rensa</button>
+        <button type="button" id="saveBtn" class="pill">Spara</button>
+        <button type="button" id="clearBtn" class="pill secondary">Rensa</button>
       </div>
     </section>
 
@@ -135,9 +167,9 @@
 
       <!-- Sökfält (matchar app.js: communitySearchInput / communitySearchBtn / communitySearchResults) -->
       <div class="row" style="margin-bottom:.5rem">
-        <input id="communitySearchInput" type="text" placeholder="Sök: text, #tagg eller namn">
-        <button id="communitySearchBtn" class="pill secondary">Sök</button>
-        <div id="communitySearchResults" class="muted" style="align-self:center"></div>
+        <input id="communitySearchInput" type="text" placeholder="Sök: text, #tagg eller namn" aria-label="Sök i community">
+        <button type="button" id="communitySearchBtn" class="pill secondary">Sök</button>
+        <div id="communitySearchResults" class="muted" style="align-self:center" aria-live="polite"></div>
       </div>
 
       <div id="communityList" class="empty">Inga delade inlägg ännu.</div>
@@ -161,8 +193,8 @@
         <input id="profTags" type="text" placeholder="t.ex. skola, katt, spel">
       </label>
       <div class="row" style="margin-top:.6rem">
-        <button id="saveProfileBtn" class="pill">Spara profil</button>
-        <button id="cancelProfileBtn" class="pill secondary">Stäng</button>
+        <button type="button" id="saveProfileBtn" class="pill">Spara profil</button>
+        <button type="button" id="cancelProfileBtn" class="pill secondary">Stäng</button>
       </div>
     </section>
 
@@ -174,19 +206,19 @@
       <h3>Publika inlägg</h3>
       <div id="profileViewPosts" class="empty">Inga publika inlägg ännu.</div>
       <div class="row" style="margin-top:.6rem">
-        <button id="closeProfileViewBtn" class="pill secondary">Stäng</button>
+        <button type="button" id="closeProfileViewBtn" class="pill secondary">Stäng</button>
       </div>
     </section>
   </main>
 
   <!-- ============== 6) FOOTER & NAV ============== -->
-  <footer>
+  <footer role="contentinfo">
     <div class="tabs" role="tablist" aria-label="Huvudnavigation">
-      <button id="listViewBtn"  class="tab active" role="tab" aria-selected="true">Lista</button>
-      <button id="dayViewBtn"   class="tab" role="tab" aria-selected="false">Dag</button>
-      <button id="weekViewBtn"  class="tab" role="tab" aria-selected="false">Vecka</button>
-      <button id="alarmViewBtn" class="tab" role="tab" aria-selected="false">Alarm</button>
-      <button id="communityViewBtn" class="tab" role="tab" aria-selected="false">Community</button>
+      <button type="button" id="listViewBtn"  class="tab active" role="tab" aria-selected="true">Lista</button>
+      <button type="button" id="dayViewBtn"   class="tab" role="tab" aria-selected="false">Dag</button>
+      <button type="button" id="weekViewBtn"  class="tab" role="tab" aria-selected="false">Vecka</button>
+      <button type="button" id="alarmViewBtn" class="tab" role="tab" aria-selected="false">Alarm</button>
+      <button type="button" id="communityViewBtn" class="tab" role="tab" aria-selected="false">Community</button>
     </div>
     <p>
       <a href="TERMS.md">Användarvillkor</a> ·
@@ -205,10 +237,10 @@
   <!-- ============== 9) COOKIE-BANNER ============== -->
   <div id="cookie-banner"
        style="position:fixed;bottom:0;left:0;right:0;background:#222;color:#fff;
-              padding:10px;text-align:center;display:none;z-index:9999">
+              padding:10px;text-align:center;display:none;z-index:10000">
     Vi använder cookies för att förbättra din upplevelse.
     <a href="COOKIES.md" style="color:#4ecdc4">Läs mer</a>
-    <button onclick="acceptCookies()" style="margin-left:10px">OK</button>
+    <button type="button" onclick="acceptCookies()" style="margin-left:10px">OK</button>
   </div>
   <script>
     function acceptCookies(){
