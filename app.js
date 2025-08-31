@@ -29,11 +29,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
+// (OBS: deprecation-varning är ok; funkar ändå.)
 enableIndexedDbPersistence(db).catch(()=>{});
 
 // ---------- Helpers ----------
 const today = () => new Date().toISOString().slice(0,10);
 const now   = () => new Date().toTimeString().slice(0,5);
+
 const byNewest = (a,b) => {
   const ca = a.createdAt?.seconds ?? 0;
   const cb = b.createdAt?.seconds ?? 0;
@@ -42,7 +44,10 @@ const byNewest = (a,b) => {
   const sb = (b.date||"") + (b.time||"");
   return sb.localeCompare(sa);
 };
+
 const sortPair = (a,b) => a < b ? `${a}_${b}` : `${b}_${a}`;
+
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
 // ---------- UI refs ----------
 const authSection  = document.getElementById('authSection');
@@ -107,7 +112,11 @@ const profileViewMeta     = document.getElementById('profileViewMeta');
 const profileViewPosts    = document.getElementById('profileViewPosts');
 const closeProfileViewBtn = document.getElementById('closeProfileViewBtn');
 
-// DM (blir en enkel panel i profilvyn; om du vill kan du lägga HTML själv)
+// (valfritt UI) – listor för vänner/förfrågningar om du lägger in dem i HTML
+const requestsList = document.getElementById('requestsList');
+const friendsList  = document.getElementById('friendsList');
+
+// DM
 let chatUnsub = null;
 
 // Defaults & notiser
@@ -118,38 +127,45 @@ if ("Notification" in window && Notification.permission !== "granted") {
 }
 
 // ---------- Auth handlers ----------
-registerBtn.onclick = async () => {
+registerBtn?.addEventListener('click', async () => {
   try {
-    const cred = await createUserWithEmailAndPassword(auth, emailEl.value, passEl.value);
+    const email = (emailEl?.value||'').trim();
+    const pass  = (passEl?.value||'').trim();
+    if (!email || !pass) return alert("Fyll i e-post och lösenord.");
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
     await ensureUserDoc(cred.user);
   } catch (e) { alert(e.message); }
-};
+});
 
-loginBtn.onclick = async () => {
-  try { await signInWithEmailAndPassword(auth, emailEl.value, passEl.value); }
-  catch (e) { alert(e.message); }
-};
+loginBtn?.addEventListener('click', async () => {
+  try {
+    const email = (emailEl?.value||'').trim();
+    const pass  = (passEl?.value||'').trim();
+    if (!email || !pass) return alert("Fyll i e-post och lösenord.");
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch (e) { alert(e.message); }
+});
 
-googleBtn.onclick = async () => {
+googleBtn?.addEventListener('click', async () => {
   try {
     const provider = new GoogleAuthProvider();
     const res = await signInWithPopup(auth, provider);
     await ensureUserDoc(res.user);
   } catch (e) { alert(e.message); }
-};
+});
 
 const doLogout = () => signOut(auth);
-logoutBtn.onclick = doLogout;
-logoutTop.onclick = doLogout;
+logoutBtn?.addEventListener('click', doLogout);
+logoutTop?.addEventListener('click', doLogout);
 
-resetBtn.onclick = async () => {
-  const email = (emailEl.value || '').trim();
+resetBtn?.addEventListener('click', async () => {
+  const email = (emailEl?.value || '').trim();
   if (!email) return alert("Skriv in din e-post först.");
   try {
     await sendPasswordResetEmail(auth, email);
     alert("Återställningslänk skickad!");
   } catch (e) { alert("Kunde inte skicka: " + e.message); }
-};
+});
 
 // ---------- User doc ----------
 async function ensureUserDoc(user){
@@ -177,7 +193,9 @@ async function ensureUserDoc(user){
     const data = snap.data() || {};
     if (!data.displayName && fallbackName) updates.displayName = fallbackName;
     if (!data.photoURL && user.photoURL)   updates.photoURL   = user.photoURL;
-    if (Object.keys(updates).length > 1) { await setDoc(ref, updates, { merge: true }); }
+    if (Object.keys(updates).length > 1) {
+      await setDoc(ref, updates, { merge: true });
+    }
     return { ...data, ...updates };
   }
 }
@@ -198,9 +216,9 @@ function clearForm(){
   if (dateInput)   dateInput.value = today();
   if (timeInput)   timeInput.value = now();
 }
-clearBtn.onclick = (e) => { e.preventDefault(); clearForm(); contentInput?.focus(); };
+clearBtn?.addEventListener('click', (e) => { e.preventDefault(); clearForm(); contentInput?.focus(); });
 
-saveBtn.onclick = async () => {
+saveBtn?.addEventListener('click', async () => {
   const user = auth.currentUser;
   if (!user) { alert("Logga in först."); return; }
 
@@ -244,7 +262,7 @@ saveBtn.onclick = async () => {
     console.error("Save failed:", e);
     alert("Kunde inte spara: " + (e.message || e.code));
   }
-};
+});
 
 // ---------- Privat list: live lyssning & render ----------
 let unsubscribe = null;
@@ -283,18 +301,17 @@ const setActive = (id) => {
   document.getElementById(id)?.classList.add('active');
 };
 
-listViewBtn.onclick  = ()=>{ setActive('listViewBtn');  viewMode='list';  notesSection.style.display='block'; communitySection?.style && (communitySection.style.display='none'); render(); };
-dayViewBtn.onclick   = ()=>{ setActive('dayViewBtn');   viewMode='day';   notesSection.style.display='block'; communitySection?.style && (communitySection.style.display='none'); render(); };
-weekViewBtn.onclick  = ()=>{ setActive('weekViewBtn');  viewMode='week';  notesSection.style.display='block'; communitySection?.style && (communitySection.style.display='none'); render(); };
-alarmViewBtn.onclick = ()=>{ setActive('alarmViewBtn'); viewMode='alarm'; notesSection.style.display='block'; communitySection?.style && (communitySection.style.display='none'); render(); };
+listViewBtn?.addEventListener('click', ()=>{ setActive('listViewBtn');  viewMode='list';  notesSection.style.display='block'; communitySection?.style && (communitySection.style.display='none'); render(); });
+dayViewBtn?.addEventListener('click',  ()=>{ setActive('dayViewBtn');   viewMode='day';   notesSection.style.display='block'; communitySection?.style && (communitySection.style.display='none'); render(); });
+weekViewBtn?.addEventListener('click', ()=>{ setActive('weekViewBtn');  viewMode='week';  notesSection.style.display='block'; communitySection?.style && (communitySection.style.display='none'); render(); });
+alarmViewBtn?.addEventListener('click',()=>{ setActive('alarmViewBtn'); viewMode='alarm'; notesSection.style.display='block'; communitySection?.style && (communitySection.style.display='none'); render(); });
 
-// Community-tab
-communityBtn.onclick = ()=>{
+communityBtn?.addEventListener('click', ()=>{
   setActive('communityViewBtn');
   notesSection.style.display = 'none';
   communitySection && (communitySection.style.display = 'block');
   renderCommunity();
-};
+});
 
 function render(){
   if (!notesList) return;
@@ -368,7 +385,7 @@ function rescheduleAll(){
   (currentNotes || []).filter(n => n.alarm).forEach(scheduleAlarm);
 }
 
-// ---------- COMMUNITY: live feed, filter, reactions, flag ----------
+// ---------- COMMUNITY ----------
 let unsubscribeCommunity = null;
 let communityNotes = [];
 let communityFilterTag = null;
@@ -404,7 +421,7 @@ function renderCommunity(){
   if (!communitySection || !communityList) return;
   let list = communityNotes.filter(n => !locallyHidden.has(n.id));
 
-  // ev aktivt filter
+  // filter
   if (communityFilterTag){
     list = list.filter(n => (n.tags||[]).includes(communityFilterTag));
   }
@@ -414,6 +431,7 @@ function renderCommunity(){
 
   if (!list.length){
     communityList.innerHTML = '<div class="empty">Inga delade inlägg just nu.</div>';
+    if (searchResult) searchResult.textContent = '';
     return;
   }
 
@@ -424,7 +442,7 @@ function renderCommunity(){
       <button class="pill secondary" id="clearCommunityFilter" style="margin-left:.5rem">Rensa filter</button>
     </div>` : '');
 
-  // ev. sökterm i UI
+  // sökterm
   const q = (searchInput?.value || '').trim().toLowerCase();
   const searched = q ? list.filter(n => {
     const hay = [
@@ -461,7 +479,7 @@ function renderCommunity(){
       </div>
     `;
 
-    // profilchip klick — öppna profilvy
+    // profilchip -> profilvy
     div.querySelector('.author-chip')?.addEventListener('click', ()=>{
       if (n.author?.uid){ openProfileView(n.author.uid, n.author); }
     });
@@ -497,7 +515,6 @@ function renderCommunity(){
     };
   }
 
-  // visa “result count” om sök fanns
   if (searchResult){
     const count = searched.length;
     searchResult.textContent = (searchInput?.value ? `Sökresultat: ${count}` : '');
@@ -505,12 +522,8 @@ function renderCommunity(){
 }
 
 // Sök-knapp i community (valfritt UI)
-if (searchBtn){
-  searchBtn.onclick = ()=> renderCommunity();
-}
-if (searchInput){
-  searchInput.onkeydown = (e)=>{ if (e.key === 'Enter') renderCommunity(); };
-}
+searchBtn?.addEventListener('click', ()=> renderCommunity());
+searchInput?.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') renderCommunity(); });
 
 // Reaction toggle
 async function toggleReaction(noteId, emoji){
@@ -552,7 +565,7 @@ async function flagNote(noteId){
 
 // ---------- Profil: helpers ----------
 function hideAllPanels(){
-  notesSection.style.display = 'none';
+  notesSection && (notesSection.style.display = 'none');
   communitySection && (communitySection.style.display = 'none');
   profileEditSection && (profileEditSection.style.display = 'none');
   profileViewSection && (profileViewSection.style.display = 'none');
@@ -573,13 +586,12 @@ async function openProfileView(uid, fallbackAuthor=null){
   hideAllPanels();
   profileViewSection.style.display = 'block';
 
-  // hämta profil (försök — kan blockas av regler)
+  // hämta profil (tillåtelse enligt regler — har du users.read=true är detta ok)
   let u = null;
   try {
     const uSnap = await getDoc(doc(db,'users', uid));
     if (uSnap.exists()) u = uSnap.data();
   } catch (e) {
-    // fallback till author från inlägg, om regler hindrar läsning
     u = fallbackAuthor ? {
       displayName: fallbackAuthor.name || 'Anonym',
       photoURL: fallbackAuthor.photo || null,
@@ -587,14 +599,12 @@ async function openProfileView(uid, fallbackAuthor=null){
     } : { displayName:'Anonym', pronouns:'', bio:'', tags:[] };
   }
 
-  // header
   const initials = (u.displayName?.[0] || 'A').toUpperCase();
   const chip = u.photoURL
     ? `<img src="${u.photoURL}" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover">`
     : `<span style="width:40px;height:40px;border-radius:50%;display:inline-grid;place-items:center;background:#555;color:#fff;font-weight:600">${initials}</span>`;
 
   if (profileViewHeader) {
-    // vänner/DM-knappar placeras här
     profileViewHeader.innerHTML = `
       ${chip}
       <div style="flex:1">
@@ -611,37 +621,43 @@ async function openProfileView(uid, fallbackAuthor=null){
     `;
   }
 
-  // actionknappar (vän + DM)
+  // actions
   buildProfileActions(uid);
 
   // publika inlägg
-  const qy = query(
-    collection(db,'notes'),
-    where('public','==', true),
-    where('uid','==', uid),
-    orderBy('createdAt','desc'),
-    limit(30)
-  );
-  const s = await getDocs(qy);
+  try{
+    const qy = query(
+      collection(db,'notes'),
+      where('public','==', true),
+      where('uid','==', uid),
+      orderBy('createdAt','desc'),
+      limit(30)
+    );
+    const s = await getDocs(qy);
 
-  if (profileViewPosts){
-    if (s.empty){
-      profileViewPosts.innerHTML = '<div class="empty">Inga publika inlägg ännu.</div>';
-    } else {
-      profileViewPosts.innerHTML = '';
-      s.forEach(d=>{
-        const n = d.data();
-        const div = document.createElement('div');
-        div.className = 'entry';
-        div.innerHTML = `
-          <span class="muted">${n.date || ''} ${n.time || ''}</span>
-          <p>${(n.content||'').replace(/\n/g,'<br>')}</p>
-          ${(n.tags||[]).map(t=>`<span class="badge">#${t}</span>`).join(' ')}
-          ${n.image ? `<img class="thumb" src="${n.image}" alt="bild">` : ''}
-        `;
-        profileViewPosts.appendChild(div);
-      });
+    if (profileViewPosts){
+      if (s.empty){
+        profileViewPosts.innerHTML = '<div class="empty">Inga publika inlägg ännu.</div>';
+      } else {
+        profileViewPosts.innerHTML = '';
+        s.forEach(d=>{
+          const n = d.data();
+          const div = document.createElement('div');
+          div.className = 'entry';
+          div.innerHTML = `
+            <span class="muted">${n.date || ''} ${n.time || ''}</span>
+            <p>${(n.content||'').replace(/\n/g,'<br>')}</p>
+            ${(n.tags||[]).map(t=>`<span class="badge">#${t}</span>`).join(' ')}
+            ${n.image ? `<img class="thumb" src="${n.image}" alt="bild">` : ''}
+          `;
+          profileViewPosts.appendChild(div);
+        });
+      }
     }
+  }catch(e){
+    // Om index saknas etc, visa tom
+    profileViewPosts && (profileViewPosts.innerHTML = '<div class="empty">Kunde inte hämta inlägg.</div>');
+    console.warn('Profile posts error (skapa ev. index i Firestore Console):', e);
   }
 }
 
@@ -668,33 +684,40 @@ async function buildProfileActions(targetUid){
   dmBtn.onclick = ()=> openChatWith(targetUid);
   row.appendChild(dmBtn);
 
-  // Försök läsa status (om reglerna är restriktiva, ignorera tyst)
+  // Läs status (om regler tillåter)
   try{
-    const myReq = await getDoc(doc(db, `users/${targetUid}/requests`, me.uid));
-    const myFriend = await getDoc(doc(db, `users/${me.uid}/friends`, targetUid));
-    if (myFriend.exists()){
+    const a = await getDoc(doc(db, `users/${me.uid}/friends`, targetUid));
+    if (a.exists()){
       friendBtn.textContent = '✓ Vänner';
       friendBtn.onclick = async ()=>{
         if (!confirm('Ta bort vän?')) return;
         await removeFriend(targetUid);
+        await sleep(250);
         buildProfileActions(targetUid);
       };
-    } else if (myReq.exists()){
+      return;
+    }
+    const req = await getDoc(doc(db, `users/${targetUid}/requests`, me.uid));
+    if (req.exists()){
       friendBtn.textContent = '⏳ Förfrågan skickad';
       friendBtn.disabled = true;
     }
-  }catch{}
+  }catch(e){
+    // tyst
+  }
 }
 
 async function sendFriendRequest(targetUid){
   const me = auth.currentUser; if (!me) return alert('Logga in');
+  if (targetUid === me.uid) return alert('Du kan inte skicka till dig själv.');
   try{
+    // skriv request i målets subcollection
     await setDoc(doc(db, `users/${targetUid}/requests`, me.uid), {
       from: me.uid, at: serverTimestamp()
     }, { merge: true });
     alert('Vänförfrågan skickad!');
   }catch(e){
-    alert('Kunde inte skicka förfrågan (regler?): ' + e.message);
+    alert('Kunde inte skicka förfrågan: ' + e.message);
   }
 }
 
@@ -708,8 +731,9 @@ async function acceptFriendRequest(fromUid){
     await setDoc(b, { uid: me.uid,   since: serverTimestamp() }, { merge:true });
     // rensa request
     await deleteDoc(doc(db, `users/${me.uid}/requests`, fromUid));
+    alert('Ni är nu vänner! 🌈');
   }catch(e){
-    alert('Kunde inte acceptera (regler?): ' + e.message);
+    alert('Kunde inte acceptera: ' + e.message);
   }
 }
 
@@ -720,13 +744,78 @@ async function removeFriend(otherUid){
     await deleteDoc(doc(db, `users/${otherUid}/friends`, me.uid));
     alert('Vän borttagen');
   }catch(e){
-    alert('Kunde inte ta bort (regler?): ' + e.message);
+    alert('Kunde inte ta bort: ' + e.message);
   }
 }
 
-// ---------- DM (direktmeddelanden) ----------
+// (valfritt) Lyssna vänner/förfrågningar om du har list-element i HTML
+function listenFriendData(){
+  const me = auth.currentUser;
+  if (!me) return;
+
+  // Förfrågningar till mig
+  if (requestsList){
+    const rq = query(collection(db, `users/${me.uid}/requests`), orderBy('at','desc'));
+    onSnapshot(rq, (snap)=>{
+      const arr=[]; snap.forEach(d=> arr.push({ id:d.id, ...d.data() }));
+      requestsList.innerHTML = arr.length ? arr.map(x=>`
+        <div class="entry">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div><strong>${x.id}</strong> <span class="muted">vill bli vän</span></div>
+            <div class="row">
+              <button class="pill" data-acc="${x.id}">Acceptera</button>
+              <button class="pill secondary" data-dec="${x.id}">Avböj</button>
+            </div>
+          </div>
+        </div>
+      `).join('') : '<div class="empty">Inga förfrågningar.</div>';
+
+      // bind
+      requestsList.querySelectorAll('[data-acc]').forEach(btn=>{
+        btn.onclick = ()=> acceptFriendRequest(btn.dataset.acc);
+      });
+      requestsList.querySelectorAll('[data-dec]').forEach(btn=>{
+        btn.onclick = async ()=>{
+          try{
+            await deleteDoc(doc(db, `users/${me.uid}/requests`, btn.dataset.dec));
+          }catch(e){ alert(e.message); }
+        };
+      });
+    });
+  }
+
+  // Mina vänner
+  if (friendsList){
+    const fq = query(collection(db, `users/${me.uid}/friends`), orderBy('since','desc'));
+    onSnapshot(fq, (snap)=>{
+      const arr=[]; snap.forEach(d=> arr.push({ id:d.id, ...d.data() }));
+      friendsList.innerHTML = arr.length ? arr.map(x=>`
+        <div class="entry">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div><strong>${x.id}</strong></div>
+            <div class="row">
+              <button class="pill" data-chat="${x.id}">Meddela</button>
+              <button class="pill secondary" data-rem="${x.id}">Ta bort</button>
+            </div>
+          </div>
+        </div>
+      `).join('') : '<div class="empty">Inga vänner ännu.</div>';
+
+      friendsList.querySelectorAll('[data-chat]').forEach(btn=>{
+        btn.onclick = ()=> openProfileView(btn.dataset.chat);
+      });
+      friendsList.querySelectorAll('[data-rem]').forEach(btn=>{
+        btn.onclick = async ()=>{
+          if (!confirm('Ta bort vän?')) return;
+          await removeFriend(btn.dataset.rem);
+        };
+      });
+    });
+  }
+}
+
+// ---------- DM (chats/{pair}/messages) ----------
 function ensureChatPanel(){
-  // lägg en liten panel nederst i profilvyn om den inte finns
   let panel = document.getElementById('chatPanel');
   if (panel) return panel;
   if (!profileViewSection) return null;
@@ -799,103 +888,92 @@ async function openChatWith(otherUid){
         text, at: serverTimestamp()
       });
     };
-    if (send){
-      send.onclick = sendOnce;
-    }
-    if (input){
-      input.onkeydown = (e)=>{ if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendOnce(); } };
-    }
+    if (send){ send.onclick = sendOnce; }
+    if (input){ input.onkeydown = (e)=>{ if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendOnce(); } }; }
   }catch(e){
-    alert('Kunde inte öppna chatt (regler?): ' + e.message);
+    alert('Kunde inte öppna chatt: ' + e.message);
   }
 }
 
 // ---------- Profil: events ----------
-if (editProfileBtn){
-  editProfileBtn.onclick = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-    try{
-      const snap = await getDoc(doc(db,'users',user.uid));
-      openMyProfileEditor(snap.exists() ? snap.data() : {});
-    }catch{
-      // om regler hindrar läsning, öppna tom editor med auth-data
-      openMyProfileEditor({
-        displayName: user.displayName || user.email || '',
-        pronouns:'', bio:'', tags:[]
-      });
-    }
-  };
-}
-if (userChip){ userChip.onclick = () => editProfileBtn?.onclick?.(); }
+editProfileBtn?.addEventListener('click', async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+  try{
+    const snap = await getDoc(doc(db,'users',user.uid));
+    openMyProfileEditor(snap.exists() ? snap.data() : {});
+  }catch{
+    // om regler hindrar läsning, öppna tom editor med auth-data
+    openMyProfileEditor({
+      displayName: user.displayName || user.email || '',
+      pronouns:'', bio:'', tags:[]
+    });
+  }
+});
+userChip?.addEventListener('click', ()=> editProfileBtn?.click?.());
 
-if (saveProfileBtn){
-  saveProfileBtn.onclick = async () => {
-    const user = auth.currentUser; if (!user) return;
-    const payload = {
-      displayName: (profDisplayName?.value || '').trim() || null,
-      pronouns: (profPronouns?.value || '').trim(),
-      bio: (profBio?.value || '').trim(),
-      tags: (profTags?.value || '').split(',').map(s=>s.trim()).filter(Boolean),
-      updatedAt: serverTimestamp(),
-    };
-    try{
-      await setDoc(doc(db,'users',user.uid), payload, { merge:true });
-      alert('Profil sparad!');
-      hideAllPanels();
-      const activeId = document.querySelector('.tab.active')?.id || 'listViewBtn';
-      if (activeId === 'communityViewBtn'){ communitySection && (communitySection.style.display='block'); }
-      else { notesSection.style.display='block'; }
-    }catch(e){ alert('Kunde inte spara profil: ' + e.message); }
+saveProfileBtn?.addEventListener('click', async () => {
+  const user = auth.currentUser; if (!user) return;
+  const payload = {
+    displayName: (profDisplayName?.value || '').trim() || null,
+    pronouns: (profPronouns?.value || '').trim(),
+    bio: (profBio?.value || '').trim(),
+    tags: (profTags?.value || '').split(',').map(s=>s.trim()).filter(Boolean),
+    updatedAt: serverTimestamp(),
   };
-}
-
-if (cancelProfileBtn){
-  cancelProfileBtn.onclick = () => {
+  try{
+    await setDoc(doc(db,'users',user.uid), payload, { merge:true });
+    alert('Profil sparad!');
     hideAllPanels();
     const activeId = document.querySelector('.tab.active')?.id || 'listViewBtn';
     if (activeId === 'communityViewBtn'){ communitySection && (communitySection.style.display='block'); }
-    else { notesSection.style.display='block'; }
-  };
-}
+    else { notesSection && (notesSection.style.display='block'); }
+  }catch(e){ alert('Kunde inte spara profil: ' + e.message); }
+});
 
-if (closeProfileViewBtn){
-  closeProfileViewBtn.onclick = () => {
-    if (chatUnsub) { try{ chatUnsub(); }catch{} chatUnsub = null; }
-    hideAllPanels();
-    communitySection && (communitySection.style.display='block');
-  };
-}
+cancelProfileBtn?.addEventListener('click', () => {
+  hideAllPanels();
+  const activeId = document.querySelector('.tab.active')?.id || 'listViewBtn';
+  if (activeId === 'communityViewBtn'){ communitySection && (communitySection.style.display='block'); }
+  else { notesSection && (notesSection.style.display='block'); }
+});
+
+closeProfileViewBtn?.addEventListener('click', () => {
+  if (chatUnsub) { try{ chatUnsub(); }catch{} chatUnsub = null; }
+  hideAllPanels();
+  communitySection && (communitySection.style.display='block');
+});
 
 // ---------- Auth state ----------
 onAuthStateChanged(auth, async (user)=>{
   if (user){
-    authSection.style.display = 'none';
-    noteSection.style.display = 'block';
+    authSection && (authSection.style.display = 'none');
+    noteSection && (noteSection.style.display = 'block');
 
     const activeId = document.querySelector('.tab.active')?.id || 'listViewBtn';
-    notesSection.style.display     = activeId === 'communityViewBtn' ? 'none'  : 'block';
+    notesSection && (notesSection.style.display     = activeId === 'communityViewBtn' ? 'none'  : 'block');
     communitySection && (communitySection.style.display = activeId === 'communityViewBtn' ? 'block' : 'none');
 
-    logoutBtn.style.display = '';
-    logoutTop.style.display = '';
-    userChip.style.display = '';
-    userName.textContent = user.displayName || user.email || 'Inloggad';
-    userPhoto.src = user.photoURL || './android-chrome-192x192.png';
+    logoutBtn && (logoutBtn.style.display = '');
+    logoutTop && (logoutTop.style.display = '');
+    userChip && (userChip.style.display = '');
+    if (userName) userName.textContent = user.displayName || user.email || 'Inloggad';
+    if (userPhoto) userPhoto.src = user.photoURL || './android-chrome-192x192.png';
     editProfileBtn && (editProfileBtn.style.display = '');
 
     await ensureUserDoc(user);
     startNotesListener(user.uid);
     startCommunityListener();
+    listenFriendData();
   } else {
-    authSection.style.display = 'block';
-    noteSection.style.display = 'none';
-    notesSection.style.display = 'none';
+    authSection && (authSection.style.display = 'block');
+    noteSection && (noteSection.style.display = 'none');
+    notesSection && (notesSection.style.display = 'none');
     communitySection && (communitySection.style.display = 'none');
 
-    logoutBtn.style.display = 'none';
-    logoutTop.style.display = 'none';
-    userChip.style.display = 'none';
+    logoutBtn && (logoutBtn.style.display = 'none');
+    logoutTop && (logoutTop.style.display = 'none');
+    userChip && (userChip.style.display = 'none');
     editProfileBtn && (editProfileBtn.style.display = 'none');
 
     if (unsubscribe) { try{ unsubscribe(); }catch{} }
