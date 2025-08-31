@@ -209,5 +209,20 @@
       }
     });
   </script>
+  <script>
+  function adjustFooterSpace(){
+    const f = document.querySelector('footer');
+    const h = f ? f.offsetHeight : 0;
+    // Lägg spacing både på <body> och <main> för säkerhets skull
+    document.body.style.paddingBottom = (h + 12) + 'px';
+    const main = document.querySelector('main');
+    if(main) main.style.paddingBottom = (h + 12) + 'px';
+  }
+  window.addEventListener('load', adjustFooterSpace);
+  window.addEventListener('resize', adjustFooterSpace);
+  // kör även efter dynamiska visningar (t.ex. när profilsidor öppnas)
+  const ro = new ResizeObserver(adjustFooterSpace);
+  ro.observe(document.body);
+</script>
 </body>
 </html>
