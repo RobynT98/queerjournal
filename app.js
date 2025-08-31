@@ -1,4 +1,4 @@
-// app.js (ES Module)
+// app.js (ES Module) — Notes + Community + Profiler + Sök + Vänner + DM
 
 // ---------- Firebase imports ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
@@ -11,7 +11,7 @@ import {
   getFirestore, collection, addDoc, deleteDoc, updateDoc,
   query, where, serverTimestamp, onSnapshot,
   doc, getDoc, setDoc, enableIndexedDbPersistence, increment,
-  getDocs, orderBy
+  getDocs, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 // ---------- Firebase config ----------
@@ -34,7 +34,6 @@ enableIndexedDbPersistence(db).catch(()=>{});
 // ---------- Helpers ----------
 const today = () => new Date().toISOString().slice(0,10);
 const now   = () => new Date().toTimeString().slice(0,5);
-
 const byNewest = (a,b) => {
   const ca = a.createdAt?.seconds ?? 0;
   const cb = b.createdAt?.seconds ?? 0;
@@ -43,6 +42,7 @@ const byNewest = (a,b) => {
   const sb = (b.date||"") + (b.time||"");
   return sb.localeCompare(sa);
 };
+const sortPair = (a,b) => a < b ? `${a}_${b}` : `${b}_${a}`;
 
 // ---------- UI refs ----------
 const authSection  = document.getElementById('authSection');
@@ -86,7 +86,12 @@ const communityBtn  = document.getElementById('communityViewBtn');
 const communitySection = document.getElementById('communitySection');
 const communityList    = document.getElementById('communityList');
 
-// Profil (frivilliga – koden garderas om de saknas)
+// Sök (valfria – lägg gärna in i community-sektionen)
+const searchInput  = document.getElementById('communitySearchInput'); // <input>
+const searchBtn    = document.getElementById('communitySearchBtn');   // <button>
+const searchResult = document.getElementById('communitySearchResults'); // <div>
+
+// Profil (valfria – koden kollar existens)
 const editProfileBtn      = document.getElementById('editProfileBtn');
 const profileEditSection  = document.getElementById('profileEditSection');
 const profDisplayName     = document.getElementById('profDisplayName');
@@ -102,7 +107,10 @@ const profileViewMeta     = document.getElementById('profileViewMeta');
 const profileViewPosts    = document.getElementById('profileViewPosts');
 const closeProfileViewBtn = document.getElementById('closeProfileViewBtn');
 
-// Defaults och notiser
+// DM (blir en enkel panel i profilvyn; om du vill kan du lägga HTML själv)
+let chatUnsub = null;
+
+// Defaults & notiser
 if (dateInput) dateInput.value = today();
 if (timeInput) timeInput.value = now();
 if ("Notification" in window && Notification.permission !== "granted") {
@@ -147,7 +155,6 @@ resetBtn.onclick = async () => {
 async function ensureUserDoc(user){
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
-
   const fallbackName = user.displayName || (user.email ? user.email.split('@')[0] : 'Användare');
 
   if (!snap.exists()){
@@ -170,14 +177,12 @@ async function ensureUserDoc(user){
     const data = snap.data() || {};
     if (!data.displayName && fallbackName) updates.displayName = fallbackName;
     if (!data.photoURL && user.photoURL)   updates.photoURL   = user.photoURL;
-    if (Object.keys(updates).length > 1) {
-      await setDoc(ref, updates, { merge: true });
-    }
+    if (Object.keys(updates).length > 1) { await setDoc(ref, updates, { merge: true }); }
     return { ...data, ...updates };
   }
 }
 
-// ---------- Anteckningar: skapa / redigera / radera ----------
+// ---------- Notes: create / edit / delete ----------
 let editId = null;
 let editOriginalImage = null;
 
@@ -232,10 +237,7 @@ saveBtn.onclick = async () => {
     if (editId) {
       await updateDoc(doc(db, "notes", editId), payload);
     } else {
-      await addDoc(collection(db, "notes"), {
-        ...payload,
-        createdAt: serverTimestamp(),
-      });
+      await addDoc(collection(db, "notes"), { ...payload, createdAt: serverTimestamp() });
     }
     clearForm();
   } catch(e) {
@@ -244,7 +246,7 @@ saveBtn.onclick = async () => {
   }
 };
 
-// ---------- Privat lista: live lyssning & render ----------
+// ---------- Privat list: live lyssning & render ----------
 let unsubscribe = null;
 let currentNotes = [];
 
@@ -344,7 +346,7 @@ function render(){
   });
 }
 
-// ---------- Alarm (klientside) ----------
+// ---------- Alarms ----------
 function scheduleAlarm(note){
   if (!note.date || !note.time) return;
   const dt = new Date(note.date + 'T' + note.time);
@@ -374,7 +376,7 @@ let communityFilterAuthor = null;
 const locallyHidden = new Set();
 
 function startCommunityListener(){
-  if (!communitySection) return; // inget community i HTML
+  if (!communitySection) return;
   if (unsubscribeCommunity) { try{ unsubscribeCommunity(); }catch{} }
   const qy = query(collection(db, "notes"), where("public", "==", true));
   unsubscribeCommunity = onSnapshot(qy, (snap)=>{
@@ -400,9 +402,9 @@ function chipHTML(author){
 
 function renderCommunity(){
   if (!communitySection || !communityList) return;
-
   let list = communityNotes.filter(n => !locallyHidden.has(n.id));
 
+  // ev aktivt filter
   if (communityFilterTag){
     list = list.filter(n => (n.tags||[]).includes(communityFilterTag));
   }
@@ -416,14 +418,24 @@ function renderCommunity(){
   }
 
   const filtersActive = communityFilterTag || communityFilterAuthor;
-  communityList.innerHTML = filtersActive
-    ? `<div class="muted" style="margin-bottom:.5rem">
-         Filter: ${communityFilterTag ? `#${communityFilterTag}` : ''} ${communityFilterAuthor ? '· användare' : ''} 
-         <button class="pill secondary" id="clearCommunityFilter" style="margin-left:.5rem">Rensa filter</button>
-       </div>`
-    : '';
+  communityList.innerHTML = (filtersActive ? `
+    <div class="muted" style="margin-bottom:.5rem">
+      Filter: ${communityFilterTag ? `#${communityFilterTag}` : ''} ${communityFilterAuthor ? '· användare' : ''} 
+      <button class="pill secondary" id="clearCommunityFilter" style="margin-left:.5rem">Rensa filter</button>
+    </div>` : '');
 
-  list.forEach(n=>{
+  // ev. sökterm i UI
+  const q = (searchInput?.value || '').trim().toLowerCase();
+  const searched = q ? list.filter(n => {
+    const hay = [
+      n.content||'',
+      ...(n.tags||[]),
+      (n.author?.name||'')
+    ].join(' ').toLowerCase();
+    return hay.includes(q);
+  }) : list;
+
+  searched.forEach(n=>{
     const r = n.reactions || {};
     const heart   = r.heart   || 0;
     const rainbow = r.rainbow || 0;
@@ -451,7 +463,7 @@ function renderCommunity(){
 
     // profilchip klick — öppna profilvy
     div.querySelector('.author-chip')?.addEventListener('click', ()=>{
-      if (n.author?.uid){ openProfileView(n.author.uid); }
+      if (n.author?.uid){ openProfileView(n.author.uid, n.author); }
     });
 
     // taggfilter
@@ -484,9 +496,23 @@ function renderCommunity(){
       renderCommunity();
     };
   }
+
+  // visa “result count” om sök fanns
+  if (searchResult){
+    const count = searched.length;
+    searchResult.textContent = (searchInput?.value ? `Sökresultat: ${count}` : '');
+  }
 }
 
-// Reaction toggle (subdoc per user+emoji) + räknare i noten
+// Sök-knapp i community (valfritt UI)
+if (searchBtn){
+  searchBtn.onclick = ()=> renderCommunity();
+}
+if (searchInput){
+  searchInput.onkeydown = (e)=>{ if (e.key === 'Enter') renderCommunity(); };
+}
+
+// Reaction toggle
 async function toggleReaction(noteId, emoji){
   const user = auth.currentUser;
   if (!user) { alert("Logga in för att reagera."); return; }
@@ -508,7 +534,7 @@ async function toggleReaction(noteId, emoji){
   }
 }
 
-// Flagga: lokalt dölj + skriv flag subdoc + öka flagCount
+// Flagga
 async function flagNote(noteId){
   const user = auth.currentUser;
   if (!user) { alert("Logga in för att flagga."); return; }
@@ -524,12 +550,10 @@ async function flagNote(noteId){
   }
 }
 
-// ---------- Profil: helpers (visning/dölj, egna/andras) ----------
+// ---------- Profil: helpers ----------
 function hideAllPanels(){
-  // bas
   notesSection.style.display = 'none';
   communitySection && (communitySection.style.display = 'none');
-  // profil
   profileEditSection && (profileEditSection.style.display = 'none');
   profileViewSection && (profileViewSection.style.display = 'none');
 }
@@ -544,14 +568,24 @@ function openMyProfileEditor(userData){
   if (profTags)        profTags.value        = (userData.tags || []).join(', ');
 }
 
-async function openProfileView(uid){
+async function openProfileView(uid, fallbackAuthor=null){
   if (!profileViewSection) return;
   hideAllPanels();
   profileViewSection.style.display = 'block';
 
-  // hämta profil
-  const uSnap = await getDoc(doc(db,'users', uid));
-  const u = uSnap.exists() ? uSnap.data() : { displayName:'Anonym', pronouns:'', bio:'', tags:[] };
+  // hämta profil (försök — kan blockas av regler)
+  let u = null;
+  try {
+    const uSnap = await getDoc(doc(db,'users', uid));
+    if (uSnap.exists()) u = uSnap.data();
+  } catch (e) {
+    // fallback till author från inlägg, om regler hindrar läsning
+    u = fallbackAuthor ? {
+      displayName: fallbackAuthor.name || 'Anonym',
+      photoURL: fallbackAuthor.photo || null,
+      pronouns: '', bio:'', tags:[]
+    } : { displayName:'Anonym', pronouns:'', bio:'', tags:[] };
+  }
 
   // header
   const initials = (u.displayName?.[0] || 'A').toUpperCase();
@@ -560,12 +594,14 @@ async function openProfileView(uid){
     : `<span style="width:40px;height:40px;border-radius:50%;display:inline-grid;place-items:center;background:#555;color:#fff;font-weight:600">${initials}</span>`;
 
   if (profileViewHeader) {
+    // vänner/DM-knappar placeras här
     profileViewHeader.innerHTML = `
       ${chip}
-      <div>
+      <div style="flex:1">
         <div style="font-weight:600">${u.displayName || 'Anonym'}</div>
         <div class="muted">${u.pronouns || ''}</div>
       </div>
+      <div class="row" id="profileActionRow" style="justify-content:flex-end;gap:.4rem"></div>
     `;
   }
   if (profileViewMeta) {
@@ -575,12 +611,16 @@ async function openProfileView(uid){
     `;
   }
 
-  // hämta användarens publika inlägg
+  // actionknappar (vän + DM)
+  buildProfileActions(uid);
+
+  // publika inlägg
   const qy = query(
     collection(db,'notes'),
     where('public','==', true),
     where('uid','==', uid),
-    orderBy('createdAt','desc')
+    orderBy('createdAt','desc'),
+    limit(30)
   );
   const s = await getDocs(qy);
 
@@ -605,13 +645,186 @@ async function openProfileView(uid){
   }
 }
 
+// ---------- Profil: actions (vän + DM) ----------
+async function buildProfileActions(targetUid){
+  const row = document.getElementById('profileActionRow');
+  if (!row) return;
+  row.innerHTML = '';
+
+  const me = auth.currentUser;
+  if (!me || me.uid === targetUid) return; // inga knappar på mig själv
+
+  // Vän-knapp
+  const friendBtn = document.createElement('button');
+  friendBtn.className = 'pill secondary';
+  friendBtn.textContent = '➕ Lägg till vän';
+  friendBtn.onclick = ()=> sendFriendRequest(targetUid);
+  row.appendChild(friendBtn);
+
+  // DM-knapp
+  const dmBtn = document.createElement('button');
+  dmBtn.className = 'pill';
+  dmBtn.textContent = '💬 Meddela';
+  dmBtn.onclick = ()=> openChatWith(targetUid);
+  row.appendChild(dmBtn);
+
+  // Försök läsa status (om reglerna är restriktiva, ignorera tyst)
+  try{
+    const myReq = await getDoc(doc(db, `users/${targetUid}/requests`, me.uid));
+    const myFriend = await getDoc(doc(db, `users/${me.uid}/friends`, targetUid));
+    if (myFriend.exists()){
+      friendBtn.textContent = '✓ Vänner';
+      friendBtn.onclick = async ()=>{
+        if (!confirm('Ta bort vän?')) return;
+        await removeFriend(targetUid);
+        buildProfileActions(targetUid);
+      };
+    } else if (myReq.exists()){
+      friendBtn.textContent = '⏳ Förfrågan skickad';
+      friendBtn.disabled = true;
+    }
+  }catch{}
+}
+
+async function sendFriendRequest(targetUid){
+  const me = auth.currentUser; if (!me) return alert('Logga in');
+  try{
+    await setDoc(doc(db, `users/${targetUid}/requests`, me.uid), {
+      from: me.uid, at: serverTimestamp()
+    }, { merge: true });
+    alert('Vänförfrågan skickad!');
+  }catch(e){
+    alert('Kunde inte skicka förfrågan (regler?): ' + e.message);
+  }
+}
+
+// (kallas från din egna “förfrågningar”-UI när du bygger den)
+async function acceptFriendRequest(fromUid){
+  const me = auth.currentUser; if (!me) return;
+  try{
+    const a = doc(db, `users/${me.uid}/friends`, fromUid);
+    const b = doc(db, `users/${fromUid}/friends`, me.uid);
+    await setDoc(a, { uid: fromUid, since: serverTimestamp() }, { merge:true });
+    await setDoc(b, { uid: me.uid,   since: serverTimestamp() }, { merge:true });
+    // rensa request
+    await deleteDoc(doc(db, `users/${me.uid}/requests`, fromUid));
+  }catch(e){
+    alert('Kunde inte acceptera (regler?): ' + e.message);
+  }
+}
+
+async function removeFriend(otherUid){
+  const me = auth.currentUser; if (!me) return;
+  try{
+    await deleteDoc(doc(db, `users/${me.uid}/friends`, otherUid));
+    await deleteDoc(doc(db, `users/${otherUid}/friends`, me.uid));
+    alert('Vän borttagen');
+  }catch(e){
+    alert('Kunde inte ta bort (regler?): ' + e.message);
+  }
+}
+
+// ---------- DM (direktmeddelanden) ----------
+function ensureChatPanel(){
+  // lägg en liten panel nederst i profilvyn om den inte finns
+  let panel = document.getElementById('chatPanel');
+  if (panel) return panel;
+  if (!profileViewSection) return null;
+
+  panel = document.createElement('div');
+  panel.id = 'chatPanel';
+  panel.className = 'card';
+  panel.style.marginTop = '.75rem';
+  panel.innerHTML = `
+    <h3 style="margin-top:0">Direktmeddelanden</h3>
+    <div id="chatHeader" class="muted" style="margin-bottom:.25rem"></div>
+    <div id="chatMessages" style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:.5rem;padding:.5rem"></div>
+    <div class="row" style="margin-top:.5rem">
+      <input id="chatInput" type="text" placeholder="Skriv ett meddelande…">
+      <button id="chatSendBtn" class="pill">Skicka</button>
+    </div>
+  `;
+  profileViewSection.appendChild(panel);
+  return panel;
+}
+
+async function getOrCreateDirectChat(otherUid){
+  const me = auth.currentUser; if (!me) throw new Error('no user');
+  const chatId = sortPair(me.uid, otherUid);
+  const cref = doc(db, 'chats', chatId);
+  const snap = await getDoc(cref);
+  if (!snap.exists()){
+    await setDoc(cref, { members:[me.uid, otherUid], createdAt: serverTimestamp() }, { merge:true });
+  }
+  return cref;
+}
+
+function listenToChat(chatRef){
+  if (chatUnsub) { try{ chatUnsub(); }catch{} chatUnsub = null; }
+  const listEl = document.getElementById('chatMessages');
+  if (!listEl) return;
+
+  const qy = query(collection(chatRef, 'messages'), orderBy('at','asc'), limit(100));
+  chatUnsub = onSnapshot(qy, (snap)=>{
+    listEl.innerHTML = '';
+    snap.forEach(d=>{
+      const m = d.data();
+      const mine = m.from === auth.currentUser?.uid;
+      const row = document.createElement('div');
+      row.style.textAlign = mine ? 'right' : 'left';
+      row.innerHTML = `<div style="display:inline-block;padding:.35rem .6rem;border:1px solid var(--line);border-radius:.75rem;max-width:70%">${(m.text||'').replace(/\n/g,'<br>')}</div>`;
+      listEl.appendChild(row);
+    });
+    listEl.scrollTop = listEl.scrollHeight;
+  }, (err)=> console.warn('chat listen error', err));
+}
+
+async function openChatWith(otherUid){
+  ensureChatPanel();
+  const header = document.getElementById('chatHeader');
+  const input  = document.getElementById('chatInput');
+  const send   = document.getElementById('chatSendBtn');
+  if (header) header.textContent = 'Privat chatt';
+
+  try{
+    const chatRef = await getOrCreateDirectChat(otherUid);
+    listenToChat(chatRef);
+
+    const sendOnce = async ()=>{
+      const text = (input?.value||'').trim();
+      if (!text) return;
+      input.value = '';
+      await addDoc(collection(chatRef,'messages'), {
+        from: auth.currentUser.uid,
+        text, at: serverTimestamp()
+      });
+    };
+    if (send){
+      send.onclick = sendOnce;
+    }
+    if (input){
+      input.onkeydown = (e)=>{ if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendOnce(); } };
+    }
+  }catch(e){
+    alert('Kunde inte öppna chatt (regler?): ' + e.message);
+  }
+}
+
 // ---------- Profil: events ----------
 if (editProfileBtn){
   editProfileBtn.onclick = async () => {
     const user = auth.currentUser;
     if (!user) return;
-    const snap = await getDoc(doc(db,'users',user.uid));
-    openMyProfileEditor(snap.exists() ? snap.data() : {});
+    try{
+      const snap = await getDoc(doc(db,'users',user.uid));
+      openMyProfileEditor(snap.exists() ? snap.data() : {});
+    }catch{
+      // om regler hindrar läsning, öppna tom editor med auth-data
+      openMyProfileEditor({
+        displayName: user.displayName || user.email || '',
+        pronouns:'', bio:'', tags:[]
+      });
+    }
   };
 }
 if (userChip){ userChip.onclick = () => editProfileBtn?.onclick?.(); }
@@ -648,6 +861,7 @@ if (cancelProfileBtn){
 
 if (closeProfileViewBtn){
   closeProfileViewBtn.onclick = () => {
+    if (chatUnsub) { try{ chatUnsub(); }catch{} chatUnsub = null; }
     hideAllPanels();
     communitySection && (communitySection.style.display='block');
   };
@@ -668,7 +882,6 @@ onAuthStateChanged(auth, async (user)=>{
     userChip.style.display = '';
     userName.textContent = user.displayName || user.email || 'Inloggad';
     userPhoto.src = user.photoURL || './android-chrome-192x192.png';
-
     editProfileBtn && (editProfileBtn.style.display = '');
 
     await ensureUserDoc(user);
@@ -687,6 +900,7 @@ onAuthStateChanged(auth, async (user)=>{
 
     if (unsubscribe) { try{ unsubscribe(); }catch{} }
     if (unsubscribeCommunity) { try{ unsubscribeCommunity(); }catch{} }
+    if (chatUnsub) { try{ chatUnsub(); }catch{} chatUnsub=null; }
   }
 });
 
