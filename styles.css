@@ -1,24 +1,11 @@
-/* =======================
-   Queer Journal – styles
-   Clean, single-source of truth
-   ======================= */
-
 :root{
   --brand1:#d53369; --brand2:#daae51;
   --btn1:#6a11cb;  --btn2:#2575fc;
-
-  --bg:#0e1016;     --text:#222;
-  --card:#ffffffcc; --muted:#666; --line:#e8e8e8;
-
-  --bg-dark:#0a0b0f;      --text-dark:#eaeaea;
-  --card-dark:#111111cc;  --line-dark:#2a2a2a;
-
+  --bg:#0e1016;    --text:#222; --card:#ffffffcc; --muted:#666; --line:#e8e8e8;
+  --bg-dark:#0a0b0f; --text-dark:#eaeaea; --card-dark:#111111cc; --line-dark:#2a2a2a;
   --glow:#ffffff55; --shadow:0 10px 30px rgba(0,0,0,.20);
-
   --radius:16px; --radius-lg:22px;
-
-  /* Footer */
-  --footer-h:72px; /* minhöjd; verklig höjd kan bli större */
+  --footer-h:72px;
 }
 
 /* ===== Reset & base ===== */
@@ -28,31 +15,36 @@ body{
   margin:0;
   font-family:'Quicksand',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif;
   color:#333;
-  background:
-    radial-gradient(1200px 700px at -10% -10%, #6a11cb33, transparent 60%),
-    radial-gradient(1000px 600px at 110% 10%,  #2575fc33, transparent 60%),
-    linear-gradient(45deg,#4e76d5,#d16d8c);
-  /* Fallback-spacer om JS inte körs */
-  padding-bottom: calc(var(--footer-h) + 12px);
+  background: transparent; /* <-- bakgrunden flyttad till ::before */
+  padding-bottom:calc(var(--footer-h) + 12px);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   transition:background .4s ease,color .2s ease;
 }
 
-@media (prefers-reduced-motion:no-preference){
-  body{ animation:bgFloat 18s ease-in-out infinite alternate }
-  @keyframes bgFloat{
-    0%{ background-position:0 0, 0 0, 0 0 }
-    100%{ background-position:-80px -40px, 60px 30px, 0 0 }
-  }
+/* ===== Bakgrund som ligger bakom allt ===== */
+body::before{
+  content:"";
+  position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:
+    radial-gradient(1200px 700px at -10% -10%, #6a11cb33, transparent 60%),
+    radial-gradient(1000px 600px at 110% 10%,  #2575fc33, transparent 60%),
+    linear-gradient(45deg,#4e76d5,#d16d8c);
+  animation:bgFloat 18s ease-in-out infinite alternate;
 }
-
-body.dark{
-  color:var(--text-dark);
+body.dark::before{
   background:
     radial-gradient(1100px 650px at -10% -10%, #6a11cb22, transparent 60%),
     radial-gradient(900px 550px at 110% 10%,  #2575fc22, transparent 60%),
     linear-gradient(45deg,#0d0f17,#1a1f2b);
+}
+
+/* ===== Bakgrunds-animation ===== */
+@media (prefers-reduced-motion:no-preference){
+  @keyframes bgFloat{
+    0%{ background-position:0 0, 0 0, 0 0 }
+    100%{ background-position:-80px -40px, 60px 30px, 0 0 }
+  }
 }
 
 /* ===== Utilities ===== */
@@ -96,8 +88,6 @@ header h1{ margin:0; font-size:1.15rem; letter-spacing:.2px }
 
 /* ===== Layout ===== */
 main{ padding:1rem; display:grid; gap:1rem; max-width:980px; margin:0 auto }
-/* extra fallback-spacer på main om JS inte körs */
-main{ padding-bottom: calc(var(--footer-h) + 16px); }
 
 /* ===== Cards (glassmorphism) ===== */
 .card{
@@ -115,151 +105,4 @@ body.dark .card{
 }
 .card:hover{ transform:translateY(-1px); box-shadow:0 14px 40px #00000030 }
 
-/* ===== Form ===== */
-.row{ display:flex; gap:.6rem; flex-wrap:wrap }
-label{ display:inline-flex; align-items:center; gap:.5rem; margin:.25rem 0 }
-
-input,select,textarea,button{ font:inherit }
-input,select,textarea{
-  width:100%; padding:.65rem .8rem; border-radius:12px; border:1px solid var(--line);
-  background:linear-gradient(180deg,#ffffffee,#ffffffcc); color:#111;
-  transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
-}
-body.dark input, body.dark select, body.dark textarea{
-  background:linear-gradient(180deg,#171717dd,#151515cc); color:var(--text-dark);
-  border-color:var(--line-dark);
-}
-textarea{ min-height:120px; resize:vertical }
-
-input:focus, select:focus, textarea:focus{
-  outline:none;
-  border-color:#7aa7ff;
-  box-shadow:0 0 0 3px #7aa7ff33;
-}
-
-.pill{
-  border-radius:999px; border:0;
-  background:linear-gradient(90deg,var(--btn1),var(--btn2));
-  color:#fff; padding:.6rem 1.1rem; cursor:pointer;
-  box-shadow:0 8px 18px #00000025, inset 0 -2px 0 #ffffff2a;
-  transition:transform .15s ease, box-shadow .25s ease, filter .15s ease;
-}
-.pill:hover{ transform:translateY(-1px); box-shadow:0 12px 26px #00000035, inset 0 -2px 0 #ffffff38 }
-.pill:active{ transform:translateY(0) scale(.98) }
-.pill.secondary{
-  background:linear-gradient(180deg,#e8e8e8,#d9d9d9); color:#222; box-shadow:0 6px 14px #00000015;
-}
-body.dark .pill.secondary{ background:linear-gradient(180deg,#2b2b2b,#222); color:#eee }
-
-.gbtn{
-  background:#fff; color:#222; border:1px solid var(--line);
-  display:inline-flex; align-items:center; gap:.5rem;
-  box-shadow:0 6px 16px #00000018;
-}
-.gbtn img{ width:18px; height:18px }
-
-/* ===== Badges & chips ===== */
-.badge{
-  display:inline-block; padding:.18rem .6rem; border-radius:999px;
-  border:1px solid var(--line); font-size:.82rem; margin:.2rem .25rem .2rem 0;
-  background:linear-gradient(180deg,#ffffffee,#ffffffcc);
-  transition:transform .12s ease, box-shadow .2s ease;
-}
-body.dark .badge{ background:linear-gradient(180deg,#1b1b1b,#161616); border-color:var(--line-dark) }
-#communityList .entry .badge{ cursor:pointer }
-#communityList .entry .badge:hover{ transform:translateY(-1px); box-shadow:0 6px 14px #00000022 }
-
-/* ===== Entries ===== */
-.entry{
-  border:1px solid var(--line); padding:.9rem; border-radius:14px; margin:.6rem 0;
-  background:linear-gradient(180deg,#ffffffee,#ffffffe6);
-  transition:transform .16s ease, box-shadow .25s ease, border-color .2s ease;
-}
-.entry:hover{ transform:translateY(-2px); box-shadow:0 12px 28px #00000022 }
-body.dark .entry{
-  background:linear-gradient(180deg,#161616ee,#141414e6);
-  border-color:var(--line-dark);
-}
-.thumb{
-  display:block; margin-top:.6rem; border-radius:12px; max-width:100%;
-  box-shadow:0 10px 24px #00000025; transition:transform .25s ease, filter .25s ease
-}
-.thumb:hover{ transform:scale(1.01) }
-
-/* ===== Footer (single source) =====
-   Fast, fixed footer + spacer i CSS/JS → inget överlappar och copyright syns alltid.
-*/
-footer{
-  position:fixed; left:0; right:0; bottom:0;
-  min-height: var(--footer-h);
-  height:auto;
-  padding:.35rem .6rem .45rem;
-  background:linear-gradient(90deg,#1d1f2a,#171923);
-  color:#fff;
-  border-top:1px solid rgba(255,255,255,.08);
-  z-index:1000;
-  display:flex; flex-direction:column; justify-content:center;
-  backdrop-filter:blur(10px) saturate(120%);
-}
-body.dark footer{ background:linear-gradient(90deg,#111319,#0d0f13) }
-
-footer .tabs{
-  max-width:980px; margin:0 auto;
-  display:flex; gap:.35rem; padding:.35rem .6rem;
-}
-footer .tab{
-  flex:1; background:transparent; border:0; padding:.6rem 0; cursor:pointer; color:inherit;
-  border-bottom:2px solid transparent; border-radius:10px;
-  transition:background .2s ease, border-color .2s ease, transform .1s ease;
-}
-footer .tab:hover{ background:#ffffff15; transform:translateY(-1px) }
-footer .tab.active{ font-weight:700; border-color:var(--brand1) }
-
-footer p{ margin:.1rem 0 0; text-align:center; font-size:.9rem }
-footer a{ color:#4ecdc4; text-decoration:none }
-footer a:hover{ text-decoration:underline }
-
-/* ===== Focus visible ===== */
-button:focus-visible, a:focus-visible{
-  outline:2px solid #7aa7ff; outline-offset:2px;
-}
-
-/* ===== Nice scrollbar (desktop) ===== */
-@media (hover:hover){
-  ::-webkit-scrollbar{ width:10px; height:10px }
-  ::-webkit-scrollbar-track{ background:transparent }
-  ::-webkit-scrollbar-thumb{
-    background:linear-gradient(180deg,#8fb2ff88,#d07bff88);
-    border:3px solid transparent; border-radius:999px; background-clip:padding-box;
-  }
-}
-
-/* ===== Micro-interactions for “reaction” buttons ===== */
-#communityList .react{ position:relative; overflow:hidden }
-@media (prefers-reduced-motion:no-preference){
-  #communityList .react:active::after{
-    content:''; position:absolute; inset:0; background:#ffffff55;
-    transform:scale(0); border-radius:inherit; animation:ping .4s ease;
-  }
-  @keyframes ping{ to{ transform:scale(1); opacity:0 } }
-}
-
-/* ===== Elevation for profile panels ===== */
-#profileEditSection, #profileViewSection{
-  box-shadow:0 18px 48px #00000035;
-}
-
-/* ===== Adaptive spacing on small screens ===== */
-@media (max-width:520px){
-  header h1{ font-size:1rem }
-  .pill{ padding:.55rem .95rem }
-  .card{ padding:.9rem }
-}
-
-/* ===== Print friendly ===== */
-@media print{
-  footer, .toggle-dark, .gbtn, #darkToggle{ display:none !important }
-  body{ background:#fff; color:#000; padding-bottom:0 }
-  main{ padding-bottom:0 }
-  .card{ box-shadow:none; border:1px solid #ccc; background:#fff }
-}
+/* ... (allt annat du redan har, knappar, formulär, footer, mm) ... */
