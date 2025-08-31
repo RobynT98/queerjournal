@@ -1,11 +1,24 @@
+/* =======================
+   Queer Journal – styles
+   Clean, single-source of truth
+   ======================= */
+
 :root{
   --brand1:#d53369; --brand2:#daae51;
   --btn1:#6a11cb;  --btn2:#2575fc;
-  --bg:#0e1016;    --text:#222; --card:#ffffffcc; --muted:#666; --line:#e8e8e8;
-  --bg-dark:#0a0b0f; --text-dark:#eaeaea; --card-dark:#111111cc; --line-dark:#2a2a2a;
+
+  --bg:#0e1016;     --text:#222;
+  --card:#ffffffcc; --muted:#666; --line:#e8e8e8;
+
+  --bg-dark:#0a0b0f;      --text-dark:#eaeaea;
+  --card-dark:#111111cc;  --line-dark:#2a2a2a;
+
   --glow:#ffffff55; --shadow:0 10px 30px rgba(0,0,0,.20);
+
   --radius:16px; --radius-lg:22px;
-  --footer-h:72px;
+
+  /* Footer */
+  --footer-h:72px; /* minhöjd; verklig höjd kan bli större */
 }
 
 /* ===== Reset & base ===== */
@@ -19,11 +32,13 @@ body{
     radial-gradient(1200px 700px at -10% -10%, #6a11cb33, transparent 60%),
     radial-gradient(1000px 600px at 110% 10%,  #2575fc33, transparent 60%),
     linear-gradient(45deg,#4e76d5,#d16d8c);
-  padding-bottom:calc(var(--footer-h) + 12px);
+  /* Fallback-spacer om JS inte körs */
+  padding-bottom: calc(var(--footer-h) + 12px);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   transition:background .4s ease,color .2s ease;
 }
+
 @media (prefers-reduced-motion:no-preference){
   body{ animation:bgFloat 18s ease-in-out infinite alternate }
   @keyframes bgFloat{
@@ -81,6 +96,8 @@ header h1{ margin:0; font-size:1.15rem; letter-spacing:.2px }
 
 /* ===== Layout ===== */
 main{ padding:1rem; display:grid; gap:1rem; max-width:980px; margin:0 auto }
+/* extra fallback-spacer på main om JS inte körs */
+main{ padding-bottom: calc(var(--footer-h) + 16px); }
 
 /* ===== Cards (glassmorphism) ===== */
 .card{
@@ -169,32 +186,40 @@ body.dark .entry{
 }
 .thumb:hover{ transform:scale(1.01) }
 
-/* ===== Footer (fixed) ===== */
+/* ===== Footer (single source) =====
+   Fast, fixed footer + spacer i CSS/JS → inget överlappar och copyright syns alltid.
+*/
 footer{
-  position:fixed; left:0; right:0; bottom:0; height:var(--footer-h);
+  position:fixed; left:0; right:0; bottom:0;
+  min-height: var(--footer-h);
+  height:auto;
+  padding:.35rem .6rem .45rem;
   background:linear-gradient(90deg,#1d1f2a,#171923);
-  color:#fff; border-top:1px solid rgba(255,255,255,.08);
-  z-index:1000; display:flex; flex-direction:column; justify-content:center;
+  color:#fff;
+  border-top:1px solid rgba(255,255,255,.08);
+  z-index:1000;
+  display:flex; flex-direction:column; justify-content:center;
   backdrop-filter:blur(10px) saturate(120%);
 }
 body.dark footer{ background:linear-gradient(90deg,#111319,#0d0f13) }
 
 footer .tabs{
-  max-width:980px; margin:0 auto; display:flex; gap:.35rem; padding:.4rem .6rem;
+  max-width:980px; margin:0 auto;
+  display:flex; gap:.35rem; padding:.35rem .6rem;
 }
 footer .tab{
-  flex:1; background:transparent; border:0; padding:.65rem 0; cursor:pointer; color:inherit;
+  flex:1; background:transparent; border:0; padding:.6rem 0; cursor:pointer; color:inherit;
   border-bottom:2px solid transparent; border-radius:10px;
   transition:background .2s ease, border-color .2s ease, transform .1s ease;
 }
 footer .tab:hover{ background:#ffffff15; transform:translateY(-1px) }
 footer .tab.active{ font-weight:700; border-color:var(--brand1) }
 
-footer p{ margin:.1rem 0 .4rem; text-align:center; font-size:.9rem }
+footer p{ margin:.1rem 0 0; text-align:center; font-size:.9rem }
 footer a{ color:#4ecdc4; text-decoration:none }
 footer a:hover{ text-decoration:underline }
 
-/* ===== Focus visible for all buttons/links ===== */
+/* ===== Focus visible ===== */
 button:focus-visible, a:focus-visible{
   outline:2px solid #7aa7ff; outline-offset:2px;
 }
@@ -210,9 +235,7 @@ button:focus-visible, a:focus-visible{
 }
 
 /* ===== Micro-interactions for “reaction” buttons ===== */
-#communityList .react{
-  position:relative; overflow:hidden;
-}
+#communityList .react{ position:relative; overflow:hidden }
 @media (prefers-reduced-motion:no-preference){
   #communityList .react:active::after{
     content:''; position:absolute; inset:0; background:#ffffff55;
@@ -233,53 +256,10 @@ button:focus-visible, a:focus-visible{
   .card{ padding:.9rem }
 }
 
-/* ===== Print friendly (just in case) ===== */
+/* ===== Print friendly ===== */
 @media print{
   footer, .toggle-dark, .gbtn, #darkToggle{ display:none !important }
-  body{ background:#fff; color:#000 }
+  body{ background:#fff; color:#000; padding-bottom:0 }
+  main{ padding-bottom:0 }
   .card{ box-shadow:none; border:1px solid #ccc; background:#fff }
 }
-:root{
-  --footer-h:72px; /* behåll som minhöjd, men vi använder auto */
-}
-
-/* ... */
-
-footer{
-  position:fixed;
-  left:0; right:0; bottom:0;
-  /* TA BORT height: var(--footer-h); */
-  /* Lägg till: */
-  min-height: var(--footer-h);
-  height: auto;                 /* <- auto-höjd så copyright får plats */
-  padding-bottom: .35rem;       /* lite luft */
-  background:#2a2a2a; color:#fff;
-  border-top:1px solid rgba(255,255,255,.08);
-  z-index:1000;
-  display:flex; flex-direction:column; justify-content:center;
-}
-
-/* komprimera innehållet lite så det ryms snyggt */
-footer .tabs{ max-width:920px; margin:0 auto; display:flex; gap:.25rem; padding:.35rem; }
-footer .tab{ flex:1; background:transparent; border:0; padding:.5rem 0; cursor:pointer; color:inherit; border-bottom:2px solid transparent; }
-footer .tab.active{ font-weight:600; border-color:var(--brand1) }
-footer p{ margin:.15rem 0 0; text-align:center; font-size:.9rem }
-footer a{ color:#4ecdc4; text-decoration:none }
-footer a:hover{ text-decoration:underline }
-
-/* Ge main egen botten-padding (utöver body) som fallback */
-main{ padding-bottom: calc(var(--footer-h) + 16px); }
-
-/* Extra kompakt läge på små skärmar */
-@media (max-width:540px){
-  footer .tab{ padding:.45rem 0; font-size:.95rem }
-  footer p{ font-size:.85rem }
-}
-footer{
-  position: sticky;
-  bottom: 0;
-  height: auto;
-  min-height: var(--footer-h);
-}
-body, main{ padding-bottom: 0 !important; } /* ej behövs med sticky */
-
