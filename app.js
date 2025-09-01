@@ -661,6 +661,9 @@ async function openProfileView(uid, fallbackAuthor=null){
   }
 }
 
+// ---------- Hjälpare ----------
+const sleep = (ms)=> new Promise(r=>setTimeout(r, ms));
+
 // ---------- Profil: actions (vän + DM) ----------
 async function buildProfileActions(targetUid){
   const row = document.getElementById('profileActionRow');
@@ -686,6 +689,7 @@ async function buildProfileActions(targetUid){
 
   // Läs status (om regler tillåter)
   try{
+    // är vi redan vänner?
     const a = await getDoc(doc(db, `users/${me.uid}/friends`, targetUid));
     if (a.exists()){
       friendBtn.textContent = '✓ Vänner';
@@ -697,13 +701,14 @@ async function buildProfileActions(targetUid){
       };
       return;
     }
+    // har jag redan skickat förfrågan?
     const req = await getDoc(doc(db, `users/${targetUid}/requests`, me.uid));
     if (req.exists()){
       friendBtn.textContent = '⏳ Förfrågan skickad';
       friendBtn.disabled = true;
     }
   }catch(e){
-    // tyst
+    // tyst – regler kan hindra läsning
   }
 }
 
@@ -717,7 +722,7 @@ async function sendFriendRequest(targetUid){
     }, { merge: true });
     alert('Vänförfrågan skickad!');
   }catch(e){
-    alert('Kunde inte skicka förfrågan: ' + e.message);
+    alert('Kunde inte skicka förfrågan: ' + (e.message || e.code));
   }
 }
 
@@ -733,7 +738,7 @@ async function acceptFriendRequest(fromUid){
     await deleteDoc(doc(db, `users/${me.uid}/requests`, fromUid));
     alert('Ni är nu vänner! 🌈');
   }catch(e){
-    alert('Kunde inte acceptera: ' + e.message);
+    alert('Kunde inte acceptera: ' + (e.message || e.code));
   }
 }
 
@@ -744,47 +749,16 @@ async function removeFriend(otherUid){
     await deleteDoc(doc(db, `users/${otherUid}/friends`, me.uid));
     alert('Vän borttagen');
   }catch(e){
-    alert('Kunde inte ta bort: ' + e.message);
+    alert('Kunde inte ta bort: ' + (e.message || e.code));
   }
 }
 
-
-
-  // Mina vänner
-  if (friendsList){
-    const fq = query(collection(db, `users/${me.uid}/friends`), orderBy('since','desc'));
-    onSnapshot(fq, (snap)=>{
-      const arr=[]; snap.forEach(d=> arr.push({ id:d.id, ...d.data() }));
-      friendsList.innerHTML = arr.length ? arr.map(x=>`
-        <div class="entry">
-          <div class="row" style="justify-content:space-between;align-items:center">
-            <div><strong>${x.id}</strong></div>
-            <div class="row">
-              <button class="pill" data-chat="${x.id}">Meddela</button>
-              <button class="pill secondary" data-rem="${x.id}">Ta bort</button>
-            </div>
-          </div>
-        </div>
-      `).join('') : '<div class="empty">Inga vänner ännu.</div>';
-
-      friendsList.querySelectorAll('[data-chat]').forEach(btn=>{
-        btn.onclick = ()=> openProfileView(btn.dataset.chat);
-      });
-      friendsList.querySelectorAll('[data-rem]').forEach(btn=>{
-        btn.onclick = async ()=>{
-          if (!confirm('Ta bort vän?')) return;
-          await removeFriend(btn.dataset.rem);
-        };
-      });
-    });
-  }
-}
-
+// (valfritt) Lyssna vänner/förfrågningar om du har list-element i HTML
 function listenFriendData(){
   const me = auth.currentUser;
   if (!me) return;
 
-  // Slå upp list-elementen (kan vara null om du inte har dem i HTML)
+  // Slå upp list-elementen (kan vara null om de saknas i HTML)
   const requestsList = document.getElementById('requestsList');
   const friendsList  = document.getElementById('friendsList');
 
@@ -805,6 +779,7 @@ function listenFriendData(){
         </div>
       `).join('') : '<div class="empty">Inga förfrågningar.</div>';
 
+      // bind
       requestsList.querySelectorAll('[data-acc]').forEach(btn=>{
         btn.onclick = ()=> acceptFriendRequest(btn.dataset.acc);
       });
@@ -812,7 +787,7 @@ function listenFriendData(){
         btn.onclick = async ()=>{
           try{
             await deleteDoc(doc(db, `users/${me.uid}/requests`, btn.dataset.dec));
-          }catch(e){ alert(e.message); }
+          }catch(e){ alert(e.message || e.code); }
         };
       });
     });
@@ -878,7 +853,7 @@ async function getOrCreateDirectChat(otherUid){
   const chatId = sortPair(me.uid, otherUid);
   const cref   = doc(db, 'chats', chatId);
 
-  // Viktigt: skriv direkt (merge) – ingen getDoc() först.
+  // Viktigt: skriv direkt (merge) – ingen getDoc() först (slipper race & index-läsning).
   await setDoc(
     cref,
     { members: [me.uid, otherUid], createdAt: serverTimestamp() },
@@ -931,7 +906,7 @@ async function openChatWith(otherUid){
     if (send){ send.onclick = sendOnce; }
     if (input){ input.onkeydown = (e)=>{ if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendOnce(); } }; }
   }catch(e){
-    alert('Kunde inte öppna chatt: ' + e.message);
+    alert('Kunde inte öppna chatt: ' + (e.message || e.code));
   }
 }
 
@@ -968,7 +943,7 @@ saveProfileBtn?.addEventListener('click', async () => {
     const activeId = document.querySelector('.tab.active')?.id || 'listViewBtn';
     if (activeId === 'communityViewBtn'){ communitySection && (communitySection.style.display='block'); }
     else { notesSection && (notesSection.style.display='block'); }
-  }catch(e){ alert('Kunde inte spara profil: ' + e.message); }
+  }catch(e){ alert('Kunde inte spara profil: ' + (e.message || e.code)); }
 });
 
 cancelProfileBtn?.addEventListener('click', () => {
