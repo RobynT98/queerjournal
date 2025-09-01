@@ -748,10 +748,45 @@ async function removeFriend(otherUid){
   }
 }
 
-// (valfritt) Lyssna vänner/förfrågningar om du har list-element i HTML
+
+
+  // Mina vänner
+  if (friendsList){
+    const fq = query(collection(db, `users/${me.uid}/friends`), orderBy('since','desc'));
+    onSnapshot(fq, (snap)=>{
+      const arr=[]; snap.forEach(d=> arr.push({ id:d.id, ...d.data() }));
+      friendsList.innerHTML = arr.length ? arr.map(x=>`
+        <div class="entry">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div><strong>${x.id}</strong></div>
+            <div class="row">
+              <button class="pill" data-chat="${x.id}">Meddela</button>
+              <button class="pill secondary" data-rem="${x.id}">Ta bort</button>
+            </div>
+          </div>
+        </div>
+      `).join('') : '<div class="empty">Inga vänner ännu.</div>';
+
+      friendsList.querySelectorAll('[data-chat]').forEach(btn=>{
+        btn.onclick = ()=> openProfileView(btn.dataset.chat);
+      });
+      friendsList.querySelectorAll('[data-rem]').forEach(btn=>{
+        btn.onclick = async ()=>{
+          if (!confirm('Ta bort vän?')) return;
+          await removeFriend(btn.dataset.rem);
+        };
+      });
+    });
+  }
+}
+
 function listenFriendData(){
   const me = auth.currentUser;
   if (!me) return;
+
+  // Slå upp list-elementen (kan vara null om du inte har dem i HTML)
+  const requestsList = document.getElementById('requestsList');
+  const friendsList  = document.getElementById('friendsList');
 
   // Förfrågningar till mig
   if (requestsList){
@@ -770,7 +805,6 @@ function listenFriendData(){
         </div>
       `).join('') : '<div class="empty">Inga förfrågningar.</div>';
 
-      // bind
       requestsList.querySelectorAll('[data-acc]').forEach(btn=>{
         btn.onclick = ()=> acceptFriendRequest(btn.dataset.acc);
       });
@@ -838,13 +872,19 @@ function ensureChatPanel(){
 }
 
 async function getOrCreateDirectChat(otherUid){
-  const me = auth.currentUser; if (!me) throw new Error('no user');
+  const me = auth.currentUser; 
+  if (!me) throw new Error('no user');
+
   const chatId = sortPair(me.uid, otherUid);
-  const cref = doc(db, 'chats', chatId);
-  const snap = await getDoc(cref);
-  if (!snap.exists()){
-    await setDoc(cref, { members:[me.uid, otherUid], createdAt: serverTimestamp() }, { merge:true });
-  }
+  const cref   = doc(db, 'chats', chatId);
+
+  // Viktigt: skriv direkt (merge) – ingen getDoc() först.
+  await setDoc(
+    cref,
+    { members: [me.uid, otherUid], createdAt: serverTimestamp() },
+    { merge: true }
+  );
+
   return cref;
 }
 
